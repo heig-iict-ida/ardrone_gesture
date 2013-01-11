@@ -1,9 +1,9 @@
-package controller;
+package madsdf.ardrone.controller;
 
-import gesture.AccelGyroSample;
-import gesture.CaptorSelectionFrame;
-import gesture.MovementListener;
-import gesture.MovementModel;
+import madsdf.ardrone.gesture.AccelGyroSample;
+import madsdf.ardrone.gesture.CaptorSelectionFrame;
+import madsdf.ardrone.gesture.MovementListener;
+import madsdf.ardrone.gesture.MovementModel;
 import java.awt.Point;
 import java.io.*;
 import java.util.HashMap;

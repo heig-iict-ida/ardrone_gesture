@@ -1,4 +1,4 @@
-package gesture;
+package madsdf.ardrone.gesture;
 
 /**
  * This enum class represent all the features that can be used for the gesture

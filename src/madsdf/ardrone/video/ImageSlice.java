@@ -1,4 +1,4 @@
-package video;
+package madsdf.ardrone.video;
 
 // Copyright (C) 2007-2011, PARROT SA, all rights reserved.
 
@@ -27,15 +27,15 @@ package video;
 // may be used to endorse or promote products derived from this software without
 // specific prior written permission.
 
-class MacroBlock {
+class ImageSlice {
 
-   short[][] DataBlocks;
+   MacroBlock[] MacroBlocks;
 
-   MacroBlock() {
-      DataBlocks = new short[6][];
+   ImageSlice(int macroBlockCount) {
+      MacroBlocks = new MacroBlock[macroBlockCount];
 
-      for (int index = 0; index < 6; index++) {
-         DataBlocks[index] = new short[64];
+      for (int index = 0; index < macroBlockCount; index++) {
+         MacroBlocks[index] = new MacroBlock();
       }
    }
 }

@@ -1,4 +1,4 @@
-package video;
+package madsdf.ardrone.video;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;

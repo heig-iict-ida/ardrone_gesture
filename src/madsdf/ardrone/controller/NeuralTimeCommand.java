@@ -1,4 +1,4 @@
-package controller;
+package madsdf.ardrone.controller;
 
 import java.util.concurrent.ConcurrentHashMap;
 

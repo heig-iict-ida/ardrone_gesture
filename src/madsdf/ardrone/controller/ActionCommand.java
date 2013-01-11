@@ -1,4 +1,4 @@
-package controller;
+package madsdf.ardrone.controller;
 
 /**
  * Enumeration class describing a possible action for the drone

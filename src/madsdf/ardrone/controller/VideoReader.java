@@ -1,4 +1,4 @@
-package controller;
+package madsdf.ardrone.controller;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -6,7 +6,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import video.BufferedVideoImage;
+import madsdf.ardrone.video.BufferedVideoImage;
 
 /**
  * Receive the video stream from the drone and display it on the VideoPanel.

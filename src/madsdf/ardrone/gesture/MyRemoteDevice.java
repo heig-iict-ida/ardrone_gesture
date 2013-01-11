@@ -1,4 +1,4 @@
-package gesture;
+package madsdf.ardrone.gesture;
 
 import java.io.IOException;
 import javax.bluetooth.RemoteDevice;

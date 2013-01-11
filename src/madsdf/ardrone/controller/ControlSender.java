@@ -1,4 +1,4 @@
-package controller;
+package madsdf.ardrone.controller;
 
 /**
  * The control sender is thread that read the drone action map at regular time

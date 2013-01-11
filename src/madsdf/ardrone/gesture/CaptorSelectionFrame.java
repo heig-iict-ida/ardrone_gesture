@@ -1,6 +1,6 @@
-package gesture;
+package madsdf.ardrone.gesture;
 
-import controller.NeuralController;
+import madsdf.ardrone.controller.NeuralController;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Toolkit;
@@ -74,9 +74,7 @@ public class CaptorSelectionFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Shimmer and Neural Network");
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("gesture_icon.png")));
-        setMaximumSize(new java.awt.Dimension(2147483647, 127));
         setMinimumSize(new java.awt.Dimension(232, 127));
-        setPreferredSize(new Dimension(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT));
         setResizable(false);
 
         lblMoveTitle.setText("Detected gesture :");

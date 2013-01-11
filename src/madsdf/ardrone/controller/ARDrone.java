@@ -1,9 +1,9 @@
-package controller;
+package madsdf.ardrone.controller;
 
-import gesture.BluetoothDiscovery;
-import gesture.CaptorSelectionFrame;
-import gesture.Features;
-import gesture.MovementModel;
+import madsdf.ardrone.gesture.BluetoothDiscovery;
+import madsdf.ardrone.gesture.CaptorSelectionFrame;
+import madsdf.ardrone.gesture.Features;
+import madsdf.ardrone.gesture.MovementModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;

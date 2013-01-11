@@ -1,12 +1,14 @@
-package gesture;
+package madsdf.ardrone.gesture;
 
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.ListIterator;
 
 /**
  * Movement model implementing the abstract MovementModel and implementing the
  * processFeatures methods with only three features. This movement model
- * is a specific implementation for the networks which need only the mean, min
- * and max features.
+ * is a specific implementation for the networks which need only the mean,
+ * difference and median features.
  * 
  * Java version : JDK 1.6.0_21
  * IDE : Netbeans 7.1.1
@@ -14,7 +16,7 @@ import java.util.ListIterator;
  * @author Gregoire Aubert
  * @version 1.0
  */
-public class MeanMinMaxMovement extends MovementModel {
+public class MeanDifferenceMedianMovement extends MovementModel {
    
    // Number of line and number of features
    private final static int NB_FEATURES = 3;
@@ -32,7 +34,7 @@ public class MeanMinMaxMovement extends MovementModel {
     * @param windowSize the array of windows size
     * @param movementSize the array of movement size
     */
-   public MeanMinMaxMovement(MovementListener listener, int[] windowSize, int[] movementSize){
+   public MeanDifferenceMedianMovement(MovementListener listener, int[] windowSize, int[] movementSize){
       super(listener, windowSize, movementSize);
    }
    
@@ -40,7 +42,7 @@ public class MeanMinMaxMovement extends MovementModel {
     * Constructor with default window size and movement size
     * @param listener a movement listener
     */
-   public MeanMinMaxMovement(MovementListener listener){      
+   public MeanDifferenceMedianMovement(MovementListener listener){      
       super(listener);
    }
    
@@ -49,14 +51,14 @@ public class MeanMinMaxMovement extends MovementModel {
     * @param windowSize the array of windows size
     * @param movementSize the array of movement size
     */
-   public MeanMinMaxMovement(int[] windowSize, int[] movementSize){
+   public MeanDifferenceMedianMovement(int[] windowSize, int[] movementSize){
       super(windowSize, movementSize);
    }
    
    /**
     * Constructor using the default configuration and without movement listener
     */
-   public MeanMinMaxMovement(){
+   public MeanDifferenceMedianMovement(){
       super();
    }
 
@@ -73,47 +75,72 @@ public class MeanMinMaxMovement extends MovementModel {
          features = new float[NB_FEATURES * NB_LINES];
       }
       
+      // Copy all the sample values
+      LinkedList<Float>[] sampleCopy = new LinkedList[NB_LINES];
+      for(int i = 0; i < sampleCopy.length; i++)
+         sampleCopy[i] = new LinkedList<Float>();
+      
       // Initialisation of the features array
       AccelGyroSample sample = iterator.next();
       
-      // Number of sample
-      int nbSample = 1;
+      // The maximum values
+      float[] maxValue = new float[NB_LINES];
+      
+      // The minimum values
+      float[] minValue = new float[NB_LINES];
       
       // For each value of the first AccelGyroSample, initialise the features
       for(int i = 0; i < NB_LINES; i++){
          
-         // Initialize the mean, min, max 
+         // Copy the sample
+         sampleCopy[i].add((float)sample.getVal(i+1));
+         
+         // Initialize the mean, min and max
          features[NB_FEATURES * i] = sample.getVal(i+1);
-         features[1+NB_FEATURES * i] = sample.getVal(i+1);
-         features[2+NB_FEATURES * i] = sample.getVal(i+1);
+         minValue[i] = sample.getVal(i+1);
+         maxValue[i] = sample.getVal(i+1);
       }
       
       // For each sample
       while(iterator.hasNext()){
          sample = iterator.next();
-         nbSample++;
          
          // For each value of the AccelGyroSample
          for(int i = 0; i < NB_LINES; i++){
+            
+            // Copy
+            sampleCopy[i].add((float)sample.getVal(i+1));
             
             // Mean
             features[NB_FEATURES * i] += sample.getVal(i+1);
             
             // Min
-            features[1+NB_FEATURES * i] = Math.min(sample.getVal(i+1), features[1+NB_FEATURES * i]);
+            minValue[i] = Math.min(sample.getVal(i+1), minValue[i]);
             
             // Max
-            features[2+NB_FEATURES * i] = Math.max(sample.getVal(i+1), features[2+NB_FEATURES * i]);
+            maxValue[i] = Math.max(sample.getVal(i+1), maxValue[i]);
          }
       }
       
-      // For each line process the mean
+      // For each value of the AccelGyroSample, process the remaining features
       for(int i = 0; i < NB_LINES; i++){
-
+         
+         
          // Mean
-         features[NB_FEATURES * i] /= nbSample;         
+         features[NB_FEATURES * i] /= sampleCopy[i].size();
+         
+         // Difference
+         features[1+NB_FEATURES * i] = maxValue[i] - minValue[i];
+         
+         // Median
+         Float[] med = sampleCopy[i].toArray(new Float[0]);
+         Arrays.sort(med);
+         if(med.length % 2 == 0)
+            features[2+NB_FEATURES * i] = (med[med.length / 2] + med[med.length / 2 + 1]) / 2.f;
+         else
+            features[2+NB_FEATURES * i] = med[med.length / 2 + 1];
       }
-      
+     
       // Normalize the features
       for(int i = 0; i < features.length; i++)
          features[i] = (NORM_MAX - NORM_MIN) * ((features[i] - COL_MIN) / (COL_MAX - COL_MIN)) + NORM_MIN;
@@ -121,4 +148,3 @@ public class MeanMinMaxMovement extends MovementModel {
       setFeatures(features);
    }   
 }
-
