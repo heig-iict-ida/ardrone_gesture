@@ -281,8 +281,10 @@ public class ARDrone extends JFrame implements Runnable {
          // Create the keyboard controller
          new KeyboardController(this);
          
+         new ShimmerAngleController(this);
+         
          // Create the neural controllers
-         createNeuralControllers();
+         //createNeuralControllers();
          
       }
       catch (SocketException ex) {
