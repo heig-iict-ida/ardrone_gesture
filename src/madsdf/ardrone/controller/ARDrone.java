@@ -19,6 +19,7 @@ import javax.swing.JProgressBar;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicProgressBarUI;
+import madsdf.shimmer.event.Globals;
 
 /**
  * ########### Gesture Command of a Quadricopter ###########
@@ -160,6 +161,8 @@ public class ARDrone extends JFrame implements Runnable {
    // The properties objects
    private Properties configDrone;
    private Properties[] configSensors;
+   
+   private ShimmerAngleController angleController;
 
    /**
     * Main process, create the drone controller.
@@ -281,7 +284,8 @@ public class ARDrone extends JFrame implements Runnable {
          // Create the keyboard controller
          new KeyboardController(this);
          
-         new ShimmerAngleController(this);
+         angleController = new ShimmerAngleController(this);
+         Globals.eventBus.register(angleController);
          
          // Create the neural controllers
          //createNeuralControllers();
