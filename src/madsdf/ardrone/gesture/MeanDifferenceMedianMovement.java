@@ -1,8 +1,10 @@
 package madsdf.ardrone.gesture;
 
+import com.google.common.eventbus.EventBus;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import madsdf.shimmer.gui.AccelGyro;
 
 /**
  * Movement model implementing the abstract MovementModel and implementing the
@@ -28,38 +30,8 @@ public class MeanDifferenceMedianMovement extends MovementModel {
    private static final float NORM_MAX = 0.95f;
    private static final float NORM_MIN = -0.95f;
    
-   /**
-    * Constructor with all configurations
-    * @param listener a movement listener
-    * @param windowSize the array of windows size
-    * @param movementSize the array of movement size
-    */
-   public MeanDifferenceMedianMovement(MovementListener listener, int[] windowSize, int[] movementSize){
-      super(listener, windowSize, movementSize);
-   }
-   
-   /**
-    * Constructor with default window size and movement size
-    * @param listener a movement listener
-    */
-   public MeanDifferenceMedianMovement(MovementListener listener){      
-      super(listener);
-   }
-   
-   /**
-    * Constructor with no movement listener
-    * @param windowSize the array of windows size
-    * @param movementSize the array of movement size
-    */
-   public MeanDifferenceMedianMovement(int[] windowSize, int[] movementSize){
-      super(windowSize, movementSize);
-   }
-   
-   /**
-    * Constructor using the default configuration and without movement listener
-    */
-   public MeanDifferenceMedianMovement(){
-      super();
+   public MeanDifferenceMedianMovement(EventBus ebus, int[] windowSize, int[] movementSize){
+      super(ebus, windowSize, movementSize);
    }
 
    /**
@@ -67,7 +39,7 @@ public class MeanDifferenceMedianMovement extends MovementModel {
     * @param iterator the iterator used to process the features
     */
    @Override
-   protected void processFeatures(ListIterator<AccelGyroSample> iterator) {
+   protected void processFeatures(ListIterator<AccelGyro.UncalibratedSample> iterator) {
       
       // Verify the feature array
       float[] features = getFeatures();
@@ -81,7 +53,7 @@ public class MeanDifferenceMedianMovement extends MovementModel {
          sampleCopy[i] = new LinkedList<Float>();
       
       // Initialisation of the features array
-      AccelGyroSample sample = iterator.next();
+      AccelGyro.UncalibratedSample sample = iterator.next();
       
       // The maximum values
       float[] maxValue = new float[NB_LINES];

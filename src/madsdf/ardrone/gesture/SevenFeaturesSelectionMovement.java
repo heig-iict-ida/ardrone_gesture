@@ -1,8 +1,10 @@
 package madsdf.ardrone.gesture;
 
+import com.google.common.eventbus.EventBus;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import madsdf.shimmer.gui.AccelGyro;
 
 /**
  * Movement model implementing the abstract MovementModel and implementing the
@@ -43,41 +45,8 @@ public class SevenFeaturesSelectionMovement extends MovementModel {
     * @param movementSize the array of movement size
     * @param selectedFeatures the chosen features 
     */
-   public SevenFeaturesSelectionMovement(MovementListener listener, int[] windowSize, int[] movementSize, Features ... selectedFeatures){      
-      super(listener, windowSize, movementSize);
-      this.selectedFeatures = selectedFeatures;
-      setVariancePos();
-   }
-   
-   /**
-    * Constructor with default window size and movement size
-    * @param listener a movement listener
-    * @param selectedFeatures the chosen features 
-    */
-   public SevenFeaturesSelectionMovement(MovementListener listener, Features ... selectedFeatures){      
-     super(listener);
-      this.selectedFeatures = selectedFeatures;
-      setVariancePos();
-   }
-   
-   /**
-    * Constructor with no movement listener
-    * @param windowSize the array of windows size
-    * @param movementSize the array of movement size
-    * @param selectedFeatures the chosen features 
-    */
-   public SevenFeaturesSelectionMovement(int[] windowSize, int[] movementSize, Features ... selectedFeatures){
-      super(windowSize, movementSize);
-      this.selectedFeatures = selectedFeatures;
-      setVariancePos();
-   }
-   
-   /**
-    * Constructor using the default configuration and without movement listener
-    * @param selectedFeatures the chosen features 
-    */
-   public SevenFeaturesSelectionMovement(Features ... selectedFeatures){
-      super();
+   public SevenFeaturesSelectionMovement(EventBus ebus, int[] windowSize, int[] movementSize, Features ... selectedFeatures){      
+      super(ebus, windowSize, movementSize);
       this.selectedFeatures = selectedFeatures;
       setVariancePos();
    }
@@ -98,7 +67,7 @@ public class SevenFeaturesSelectionMovement extends MovementModel {
     * @param iterator the iterator used to process the features
     */
    @Override
-   protected void processFeatures(ListIterator<AccelGyroSample> iterator) {
+   protected void processFeatures(ListIterator<AccelGyro.UncalibratedSample> iterator) {
       
       // Verify the feature array
       float[] calcFeatures = new float[NB_FEATURES * NB_LINES];
@@ -113,7 +82,7 @@ public class SevenFeaturesSelectionMovement extends MovementModel {
          sampleCopy[i] = new LinkedList<Float>();
       
       // Initialisation of the features array
-      AccelGyroSample sample = iterator.next();
+      AccelGyro.UncalibratedSample sample = iterator.next();
       
       // For each value of the first AccelGyroSample, initialise the features
       for(int i = 0; i < NB_LINES; i++){

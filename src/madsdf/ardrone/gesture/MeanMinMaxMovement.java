@@ -1,6 +1,8 @@
 package madsdf.ardrone.gesture;
 
+import com.google.common.eventbus.EventBus;
 import java.util.ListIterator;
+import madsdf.shimmer.gui.AccelGyro;
 
 /**
  * Movement model implementing the abstract MovementModel and implementing the
@@ -32,40 +34,16 @@ public class MeanMinMaxMovement extends MovementModel {
     * @param windowSize the array of windows size
     * @param movementSize the array of movement size
     */
-   public MeanMinMaxMovement(MovementListener listener, int[] windowSize, int[] movementSize){
-      super(listener, windowSize, movementSize);
+   public MeanMinMaxMovement(EventBus ebus, int[] windowSize, int[] movementSize){
+      super(ebus, windowSize, movementSize);
    }
    
-   /**
-    * Constructor with default window size and movement size
-    * @param listener a movement listener
-    */
-   public MeanMinMaxMovement(MovementListener listener){      
-      super(listener);
-   }
-   
-   /**
-    * Constructor with no movement listener
-    * @param windowSize the array of windows size
-    * @param movementSize the array of movement size
-    */
-   public MeanMinMaxMovement(int[] windowSize, int[] movementSize){
-      super(windowSize, movementSize);
-   }
-   
-   /**
-    * Constructor using the default configuration and without movement listener
-    */
-   public MeanMinMaxMovement(){
-      super();
-   }
-
    /**
     * Process all the three feature, normalize them and return them.
     * @param iterator the iterator used to process the features
     */
    @Override
-   protected void processFeatures(ListIterator<AccelGyroSample> iterator) {
+   protected void processFeatures(ListIterator<AccelGyro.UncalibratedSample> iterator) {
       
       // Verify the feature array
       float[] features = getFeatures();
@@ -74,7 +52,7 @@ public class MeanMinMaxMovement extends MovementModel {
       }
       
       // Initialisation of the features array
-      AccelGyroSample sample = iterator.next();
+      AccelGyro.UncalibratedSample sample = iterator.next();
       
       // Number of sample
       int nbSample = 1;
