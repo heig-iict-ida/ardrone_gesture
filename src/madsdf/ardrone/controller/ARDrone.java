@@ -21,6 +21,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicProgressBarUI;
 import madsdf.shimmer.event.Globals;
+import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 
 /**
  * ########### Gesture Command of a Quadricopter ###########
@@ -165,7 +166,11 @@ public class ARDrone extends JFrame implements Runnable {
    private Properties configDrone;
    private Properties[] configSensors;
    
-   private ShimmerAngleController angleController;
+   private final String leftShimmerID;
+   private final String rightShimmerID;
+   
+   private ShimmerMoveAnalyzerFrame leftShimmer;
+   private ShimmerMoveAnalyzerFrame rightShimmer;
 
    /**
     * Main process, create the drone controller.
@@ -199,15 +204,19 @@ public class ARDrone extends JFrame implements Runnable {
       }
       
       // Create the drone controller
-      ARDrone arDrone = new ARDrone(ip);
+      final String rightShimmerID = "9EDB";
+      final String leftShimmerID = "BDCD";
+      ARDrone arDrone = new ARDrone(ip, leftShimmerID, rightShimmerID);
    }
 
    /**
     * Constructor of the drone controller
     * @param droneIp the ip address of the drone
     */
-   public ARDrone(String droneIp) {
+   public ARDrone(String droneIp, String leftShimmerID, String rightShimmerID) {
       super();
+      this.leftShimmerID = leftShimmerID;
+      this.rightShimmerID = rightShimmerID;
       
       // Load the properties files
       loadProperties();
@@ -290,8 +299,14 @@ public class ARDrone extends JFrame implements Runnable {
          // Create the keyboard controller
          new KeyboardController(this);
          
-         angleController = new ShimmerAngleController(this);
-         Globals.eventBus.register(angleController);
+         leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
+         leftShimmer.setVisible(true);
+         rightShimmer.setVisible(true);
+         //Globals.getBusForShimmer(leftShimmerID).register(leftShimmer);
+         
+         //angleController = new ShimmerAngleController(this);
+         //Globals.eventBus.register(angleController);
          
          // Create the neural controllers
          //createNeuralControllers();

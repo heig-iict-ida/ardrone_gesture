@@ -19,7 +19,6 @@ import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
  */
 public class ShimmerAngleController {
     ARDrone drone;
-    ShimmerMoveAnalyzerFrame moveAnalyzer;
     
     private HashMap<ActionCommand, Boolean> activeActions = Maps.newHashMap();
     
@@ -29,12 +28,6 @@ public class ShimmerAngleController {
         activeActions.put(ActionCommand.GORIGHT, false);
         activeActions.put(ActionCommand.GOFORWARD, false);
         activeActions.put(ActionCommand.GOBACKWARD, false);
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                moveAnalyzer = new ShimmerMoveAnalyzerFrame(new String[]{});
-                moveAnalyzer.setVisible(true);
-            }
-        });
     }
     
     @Subscribe
