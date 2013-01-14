@@ -3,7 +3,13 @@
  * and open the template in the editor.
  */
 package madsdf.ardrone.controller;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.Subscribe;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.swing.SwingUtilities;
 import madsdf.shimmer.glview.ShimmerAngleConverter.AngleEvent;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 
@@ -15,9 +21,15 @@ public class ShimmerAngleController {
     ARDrone drone;
     ShimmerMoveAnalyzerFrame moveAnalyzer;
     
+    private HashMap<ActionCommand, Boolean> activeActions = Maps.newHashMap();
+    
     public ShimmerAngleController(ARDrone drone) {
         this.drone = drone;
-         java.awt.EventQueue.invokeLater(new Runnable() {
+        activeActions.put(ActionCommand.GOLEFT, false);
+        activeActions.put(ActionCommand.GORIGHT, false);
+        activeActions.put(ActionCommand.GOFORWARD, false);
+        activeActions.put(ActionCommand.GOBACKWARD, false);
+        java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 moveAnalyzer = new ShimmerMoveAnalyzerFrame(new String[]{});
                 moveAnalyzer.setVisible(true);
@@ -27,7 +39,24 @@ public class ShimmerAngleController {
     
     @Subscribe
     public void anglesUpdated(AngleEvent event) {
-        System.out.println("Angles update received : " + event.roll);
-        // TODO : Update ardrone action map
+        actionsFromAngles(event);
+        SwingUtilities.invokeLater(new Runnable() {
+         public void run() {
+             for (Map.Entry<ActionCommand, Boolean> e : activeActions.entrySet()) {
+                 drone.updateActionMap(e.getKey(), e.getValue());
+             }
+         }
+      });
+    }
+    
+    private void actionsFromAngles(AngleEvent event) {
+        activeActions.put(ActionCommand.GOLEFT, 
+                          event.pitch > -60 && event.pitch < -20 );
+        activeActions.put(ActionCommand.GORIGHT,
+                          event.pitch > 20 && event.pitch < 60);
+        activeActions.put(ActionCommand.GOFORWARD,
+                          event.roll > -60 && event.roll < -20);
+        activeActions.put(ActionCommand.GOBACKWARD,
+                          event.roll > 20 && event.roll < 60);
     }
 }

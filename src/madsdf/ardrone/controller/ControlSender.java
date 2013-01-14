@@ -34,13 +34,12 @@ public class ControlSender extends Thread {
 
    @Override
    public void run() {
-
       // Define the flag for the movement commands mode
       float gaz, pitch, roll, yaw;
 
       // Send commands each CONFIG_INTERVAL ms, to keep the connection alive
       while(!myARDrone.isExit()){
-         
+         String status = "";
          // Verify if the drone is landing
          if(myARDrone.isActionLanding() || myARDrone.getFlyingState() == FlyingState.LANDING){
             myARDrone.land();
@@ -48,8 +47,9 @@ public class ControlSender extends Thread {
          else
          {
             // Verify if the drone is taking off
-            if (myARDrone.isActionTakeOff() || myARDrone.getFlyingState() == FlyingState.TAKING_OFF)
+            if (myARDrone.isActionTakeOff() || myARDrone.getFlyingState() == FlyingState.TAKING_OFF) {
                myARDrone.takeOff();
+            }
 
             // If no movement key have been pressed, enter the hovering mode
             if(myARDrone.isActionHovering()
@@ -63,9 +63,7 @@ public class ControlSender extends Thread {
                          || myARDrone.isActionTop())){
                // Send the hovering command
                myARDrone.sendPCMD(0, 0, 0, 0, 0);
-            }
-            else{
-
+            } else {
                roll = myARDrone.getSpeed() * (+ bToI(myARDrone.isActionRight())
                                               - bToI(myARDrone.isActionLeft()));
 

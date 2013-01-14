@@ -16,6 +16,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.JFrame;
 import javax.swing.JProgressBar;
+import javax.swing.JTextArea;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicProgressBarUI;
@@ -158,6 +159,8 @@ public class ARDrone extends JFrame implements Runnable {
    // The battery progress bar
    JProgressBar batteryLevel;
    
+   JTextArea logArea;
+   
    // The properties objects
    private Properties configDrone;
    private Properties[] configSensors;
@@ -225,12 +228,15 @@ public class ARDrone extends JFrame implements Runnable {
       setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("parrot_icon.png")));
       videoPanel = new VideoPanel();
       
+      logArea = new JTextArea();
+      this.getContentPane().add(logArea, BorderLayout.SOUTH);
+      logArea.setPreferredSize(new Dimension(0, 200));
+      
       // Discover the bluetooth devices if needed
       if(configSensors != null && configSensors.length > 0)
          BluetoothDiscovery.getInstance().launchDevicesDiscovery();
 
       try {
-
          // Define the socket and the application itself
          atSocket = new DatagramSocket(AT_PORT);
 
@@ -707,9 +713,7 @@ public class ARDrone extends JFrame implements Runnable {
     * @param startAction true to send the command and false to stop sending the command
     */
    public void updateActionMap(ActionCommand command, boolean startAction) {
-
       switch (command) {
-
          // Speed control
          case SPEED:
             switch (command.getVal()) {
@@ -826,6 +830,23 @@ public class ARDrone extends JFrame implements Runnable {
          default:
             break;
       }
+      updateLog();
+   }
+   
+   private void updateLog() {
+       String status = "";
+       status += "top : " + actionTop + "\n";
+       status += "down : " + actionDown + "\n";
+       status += "forward : " + actionForward + "\n";
+       status += "backward : " + actionBackward + "\n";
+       status += "left : " + actionLeft + "\n";
+       status += "right : " + actionRight + "\n";
+       status += "rotateLeft : " + actionRotateLeft + "\n";
+       status += "rotateRight : " + actionRotateRight + "\n";
+       status += "hovering : " + actionHovering + "\n";
+       status += "takeoff : " + actionTakeOff + "\n";
+       status += "landing : " + actionLanding + "\n";
+       logArea.setText(status);
    }
 
    /**
