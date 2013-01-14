@@ -233,8 +233,8 @@ public class ARDrone extends JFrame implements Runnable {
       logArea.setPreferredSize(new Dimension(0, 200));
       
       // Discover the bluetooth devices if needed
-      if(configSensors != null && configSensors.length > 0)
-         BluetoothDiscovery.getInstance().launchDevicesDiscovery();
+      /*if(configSensors != null && configSensors.length > 0)
+         BluetoothDiscovery.getInstance().launchDevicesDiscovery();*/
 
       try {
          // Define the socket and the application itself
