@@ -3,6 +3,7 @@
  * and open the template in the editor.
  */
 package madsdf.ardrone.controller;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
@@ -17,13 +18,11 @@ import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
  *
  * @author julien
  */
-public class ShimmerAngleController {
-    ARDrone drone;
-    
+public class ShimmerAngleController extends DroneController {
     private HashMap<ActionCommand, Boolean> activeActions = Maps.newHashMap();
     
-    public ShimmerAngleController(ARDrone drone) {
-        this.drone = drone;
+    public ShimmerAngleController(ImmutableSet<ActionCommand> actionMask, ARDrone drone) {
+        super(actionMask, drone);
         activeActions.put(ActionCommand.GOLEFT, false);
         activeActions.put(ActionCommand.GORIGHT, false);
         activeActions.put(ActionCommand.GOFORWARD, false);
@@ -36,7 +35,7 @@ public class ShimmerAngleController {
         SwingUtilities.invokeLater(new Runnable() {
          public void run() {
              for (Map.Entry<ActionCommand, Boolean> e : activeActions.entrySet()) {
-                 drone.updateActionMap(e.getKey(), e.getValue());
+                 updateDroneAction(e.getKey(), e.getValue());
              }
          }
       });

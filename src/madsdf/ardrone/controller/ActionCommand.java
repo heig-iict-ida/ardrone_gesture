@@ -1,5 +1,7 @@
 package madsdf.ardrone.controller;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * Enumeration class describing a possible action for the drone
  * 
@@ -25,6 +27,12 @@ public enum ActionCommand
    ROTATERIGHT,
    CHANGEVIDEO,
    NOTHING;
+   
+   public static ImmutableSet<ActionCommand> allCommandMask() {
+       return new ImmutableSet.Builder<ActionCommand>()
+               .add(ActionCommand.values())
+               .build();
+   }
 
    /**
     * Allow to add an integer value to the constant, useful for the speed

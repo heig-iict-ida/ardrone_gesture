@@ -24,8 +24,8 @@ public class NeuralTimeCommand extends Thread {
    // The number of check an action should be active
    private int nbTimerMs = DEFAULT_NB_TIMER;
    
-   // The controlled drone
-   private ARDrone arDrone;
+   // The controller
+   private DroneController controller;
    
    // A map of all the ActionCommand already detected and their status
    private ConcurrentHashMap<ActionCommand, Integer> actionMap = new ConcurrentHashMap<ActionCommand, Integer>();
@@ -34,8 +34,8 @@ public class NeuralTimeCommand extends Thread {
     * Constructor
     * @param arDrone the controlled drone
     */
-   public NeuralTimeCommand(ARDrone arDrone){
-      this.arDrone = arDrone;
+   public NeuralTimeCommand(DroneController controller){
+      this.controller = controller;
    }
    
    /**
@@ -44,10 +44,10 @@ public class NeuralTimeCommand extends Thread {
     * @param nbTimerMs the number of check an action should be active
     * @param arDrone the controlled drone
     */
-   public NeuralTimeCommand(int timerMs, int nbTimerMs, ARDrone arDrone){
+   public NeuralTimeCommand(int timerMs, int nbTimerMs, DroneController controller){
       this.timerMs = timerMs;
       this.nbTimerMs = nbTimerMs;
-      this.arDrone = arDrone;
+      this.controller = controller;
    }
    
    /**
@@ -63,7 +63,7 @@ public class NeuralTimeCommand extends Thread {
    public void run() {
       
       // The thread end when the ardrone class is terminated
-      while(!arDrone.isExit()){
+      while(true){
          
          // Update the check number of each action command in the list
          int val;
@@ -72,8 +72,9 @@ public class NeuralTimeCommand extends Thread {
             
             // If the check number reach 0 the action is disabled and the drone
             // action map is updated
-            if(val == 0)
-               arDrone.updateActionMap(actCmd, false);
+            if(val == 0) {
+                controller.updateDroneAction(actCmd, false);
+            }
             actionMap.put(actCmd, val);
          }
          try {

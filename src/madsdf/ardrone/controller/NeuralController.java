@@ -2,6 +2,7 @@ package madsdf.ardrone.controller;
 
 import com.google.common.eventbus.Subscribe;
 import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableSet;
 import madsdf.ardrone.gesture.DetectedMovementFrame;
 import madsdf.ardrone.gesture.MovementModel;
 import java.awt.Point;
@@ -27,7 +28,7 @@ import toolFNNXMLP.FNNXMLP;
  * @author Gregoire Aubert
  * @version 1.0
  */
-public class NeuralController {
+public class NeuralController extends DroneController {
     // Default weight file for the neural network
 
     static final String MLP_CONFIG_FILE = "network.fxr";
@@ -42,8 +43,6 @@ public class NeuralController {
     private NeuralTimeCommand timeCommand;
     // The accepted error for the network outputs
     private double acceptedError = ERROR_ACCEPT;
-    // The controlled drone
-    private ARDrone arDrone;
     // The user configuration and device selection frame
     private DetectedMovementFrame movementFrame;
     private final String frameTitle;
@@ -57,8 +56,8 @@ public class NeuralController {
      * after it detection
      * @param arDrone the controlled drone
      */
-    public NeuralController(int timeActivated, int nbTimeactivated, ARDrone arDrone) {
-        this(timeActivated, nbTimeactivated, arDrone, "Sensor", ERROR_ACCEPT, MLP_CONFIG_FILE, "");
+    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone, int timeActivated, int nbTimeactivated) {
+        this(actionMask, drone, timeActivated, nbTimeactivated, "Sensor", ERROR_ACCEPT, MLP_CONFIG_FILE, "");
     }
 
     /**
@@ -75,8 +74,9 @@ public class NeuralController {
      * @param weightFile the name of the weight file
      * @param cmdmapFile the name of the cmdmap file
      */
-    public NeuralController(int timeActivated, int nbTimeactivated, ARDrone arDrone, final String frameTitle, double acceptedError, String weightFile, String cmdmapFile) {
-
+    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone,
+                            int timeActivated, int nbTimeactivated, final String frameTitle, double acceptedError, String weightFile, String cmdmapFile) {
+        super(actionMask, drone);
         // Set the accepted error
         this.acceptedError = acceptedError;
 
@@ -95,10 +95,9 @@ public class NeuralController {
 
         // Set the class field
         this.frameTitle = frameTitle;
-        this.arDrone = arDrone;
 
         // Create the action command timer
-        this.timeCommand = new NeuralTimeCommand(timeActivated, nbTimeactivated, arDrone);
+        this.timeCommand = new NeuralTimeCommand(timeActivated, nbTimeactivated, this);
 
         // Start the action command timer
         timeCommand.start();
@@ -255,7 +254,7 @@ public class NeuralController {
             cmdString += cmd.name() + ", ";
 
             // Update the action map
-            arDrone.updateActionMap(cmd, true);
+            this.updateDroneAction(cmd, true);
 
             // And update the command timer
             timeCommand.updateTimeCmd(cmd);

@@ -297,7 +297,7 @@ public class ARDrone extends JFrame implements Runnable {
          startConfig();
 
          // Create the keyboard controller
-         new KeyboardController(this);
+         new KeyboardController(ActionCommand.allCommandMask(), this);
          
          leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
          rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
@@ -311,7 +311,7 @@ public class ARDrone extends JFrame implements Runnable {
          neuralControllerFromProperties(leftBus, configLeftSensor);
          neuralControllerFromProperties(rightBus, configRightSensor);
          
-         ShimmerAngleController rightAngleController = new ShimmerAngleController(this);
+         ShimmerAngleController rightAngleController = new ShimmerAngleController(ActionCommand.allCommandMask(), this);
          rightBus.register(rightAngleController);
          
       }
@@ -587,7 +587,8 @@ public class ARDrone extends JFrame implements Runnable {
 
         // Create the neural controller
         NeuralController controller = new NeuralController(
-                timerMs, nbTimerMs, this,
+                ActionCommand.allCommandMask(), this,
+                timerMs, nbTimerMs,
                 title,
                 errorAccepted,
                 weightFile,
