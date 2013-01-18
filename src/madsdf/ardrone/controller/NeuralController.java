@@ -3,14 +3,22 @@ package madsdf.ardrone.controller;
 import com.google.common.eventbus.Subscribe;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.eventbus.EventBus;
 import madsdf.ardrone.gesture.DetectedMovementFrame;
 import madsdf.ardrone.gesture.MovementModel;
 import java.awt.Point;
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import layers.OutputLayer;
+import madsdf.ardrone.gesture.Features;
+import madsdf.ardrone.utils.PropertiesReader;
 import madsdf.shimmer.gui.AccelGyro;
 import scripting.InterThreadMonitor;
 import toolFNNXImportMLP.FNNXImportMLP;
@@ -29,6 +37,106 @@ import toolFNNXMLP.FNNXMLP;
  * @version 1.0
  */
 public class NeuralController extends DroneController {
+    // Factory method
+    public static NeuralController FromProperties (ImmutableSet<ActionCommand> actionMask, ARDrone drone, EventBus ebus, String propFileName) {
+        PropertiesReader reader = new PropertiesReader(propFileName);
+        
+        // Parse the movements and windows size
+        final String[] windowsStrings = reader.getString("windows_size").split(";");
+        final String[] movementsStrings = reader.getString("movements_size").split(";");
+        int[] windowsSize = new int[Math.min(windowsStrings.length, movementsStrings.length)];
+        int[] movementSize = new int[Math.min(windowsStrings.length, movementsStrings.length)];
+        for (int i = 0; i < windowsSize.length; i++) {
+            try {
+                windowsSize[i] = Integer.parseInt(windowsStrings[i]);
+            } catch (NumberFormatException ex) {
+                windowsSize[i] = MovementModel.DEFAULT_WINDOWSIZE;
+                System.err.println("ARDrone.createNeuralControllers.windowsSize : " + ex);
+            }
+            try {
+                movementSize[i] = Integer.parseInt(movementsStrings[i]);
+            } catch (NumberFormatException ex) {
+                movementSize[i] = MovementModel.DEFAULT_MOVEMENTSIZE;
+                System.err.println("ARDrone.createNeuralControllers.movementSize : " + ex);
+            }
+        }
+
+        // Define the movement model class name
+        String movementModelClassName = reader.getString("class_name");
+
+        // Parse the features
+        Features[] features;
+        if (reader.hasKey("features")) {
+            final String[] featuresStrings = reader.getString("features").split(";");
+            features = new Features[featuresStrings.length];
+            for (int i = 0; i < features.length; i++) {
+                features[i] = Features.valueOf(featuresStrings[i].toUpperCase());
+            }
+        } else {
+            features = new Features[0];
+        }
+
+        // Parse the rest
+        int timerMs = reader.getInteger("timer_ms");
+        int nbTimerMs = reader.getInteger("nb_timer_ms");
+        double errorAccepted = reader.getDouble("error");
+        String title = reader.getString("title");
+        
+        String sensorDataBasedir = reader.getString("sensor_basedir");
+
+        // Retreive the network weight and cmdmap files
+        String weightFile = sensorDataBasedir + "/" + reader.getString("weight_file");
+        String cmdmapFile = sensorDataBasedir + "/" + reader.getString("cmdmap_file");
+
+        // Load the movement model and create the neural controller
+        // Load the movement model class
+        Class movementModelClass = null;
+        try {
+            movementModelClass = ClassLoader.getSystemClassLoader().loadClass(movementModelClassName);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(NeuralController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        MovementModel movementModel = null;
+
+        // Create the movement model with the constructor containing the Features list
+        try {
+            Constructor constructor = movementModelClass.getConstructor(EventBus.class, int[].class, int[].class, Features[].class);
+            try {
+                movementModel = (MovementModel) constructor.newInstance(ebus, windowsSize, movementSize, features);
+            } catch (Exception ex) {
+                Logger.getLogger(NeuralController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } catch (NoSuchMethodException ex) {
+            // Will fallback on other constructor
+        }
+
+        // If there is no constructor with the Features list create without the features
+        if (movementModel == null) {
+            try {
+                Constructor constructor = movementModelClass.getConstructor(EventBus.class, int[].class, int[].class);
+                try {
+                    movementModel = (MovementModel) constructor.newInstance(ebus, windowsSize, movementSize);
+                } catch (Exception ex) {
+                    Logger.getLogger(NeuralController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (NoSuchMethodException ex) {
+                System.err.println("ARDrone.createNeuralControllers.contructor : " + ex);
+            }
+        }
+        
+        // Create the neural controller
+        NeuralController controller = new NeuralController(
+                actionMask, drone, movementModel,
+                timerMs, nbTimerMs,
+                title,
+                errorAccepted,
+                weightFile,
+                cmdmapFile);
+        
+        ebus.register(controller);
+        return controller;
+    }
+    
     // Default weight file for the neural network
 
     static final String MLP_CONFIG_FILE = "network.fxr";
@@ -46,6 +154,7 @@ public class NeuralController extends DroneController {
     // The user configuration and device selection frame
     private DetectedMovementFrame movementFrame;
     private final String frameTitle;
+    private MovementModel movementModel;
 
     /**
      * Constructor using the weight file name for the neural network
@@ -56,8 +165,8 @@ public class NeuralController extends DroneController {
      * after it detection
      * @param arDrone the controlled drone
      */
-    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone, int timeActivated, int nbTimeactivated) {
-        this(actionMask, drone, timeActivated, nbTimeactivated, "Sensor", ERROR_ACCEPT, MLP_CONFIG_FILE, "");
+    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone, MovementModel movementModel, int timeActivated, int nbTimeactivated) {
+        this(actionMask, drone, movementModel, timeActivated, nbTimeactivated, "Sensor", ERROR_ACCEPT, MLP_CONFIG_FILE, "");
     }
 
     /**
@@ -74,11 +183,12 @@ public class NeuralController extends DroneController {
      * @param weightFile the name of the weight file
      * @param cmdmapFile the name of the cmdmap file
      */
-    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone,
+    public NeuralController(ImmutableSet<ActionCommand> actionMask, ARDrone drone, MovementModel movementModel,
                             int timeActivated, int nbTimeactivated, final String frameTitle, double acceptedError, String weightFile, String cmdmapFile) {
         super(actionMask, drone);
         // Set the accepted error
         this.acceptedError = acceptedError;
+        this.movementModel = movementModel;
 
         // Set the weight file
         weightFile = weightFile == null || weightFile.isEmpty() ? MLP_CONFIG_FILE : weightFile;
@@ -235,6 +345,11 @@ public class NeuralController extends DroneController {
             System.err.println("ActionCommand.fromString: " + ex);
             return ActionCommand.NOTHING;
         }
+    }
+    
+    @Subscribe
+    public void sampleReceived(AccelGyro.UncalibratedSample sample) {
+        movementModel.addAccelGyroSample(sample);
     }
 
     /**

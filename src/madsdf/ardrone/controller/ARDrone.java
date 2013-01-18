@@ -21,6 +21,7 @@ import madsdf.ardrone.gesture.Features;
 import madsdf.ardrone.gesture.MovementModel;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import madsdf.shimmer.event.Globals;
 
@@ -165,14 +166,9 @@ public class ARDrone extends JFrame implements Runnable {
    
    // The properties objects
    private Properties configDrone;
-   private Properties configLeftSensor;
-   private Properties configRightSensor;
    
    private final String leftShimmerID;
    private final String rightShimmerID;
-   
-   // Data where sensor specific data (such as NN weights) are stored
-   private String sensorDataBasedir;
    
    private ShimmerMoveAnalyzerFrame leftShimmer;
    private ShimmerMoveAnalyzerFrame rightShimmer;
@@ -308,14 +304,13 @@ public class ARDrone extends JFrame implements Runnable {
          EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
          EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
          
-         neuralControllerFromProperties(leftBus, configLeftSensor);
-         neuralControllerFromProperties(rightBus, configRightSensor);
+         // TODO: Should use configDrone.controller property
+         NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "positions_sensor_gauche.properties");
+         NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "positions_sensor_droit.properties");
          
-         ShimmerAngleController rightAngleController = new ShimmerAngleController(ActionCommand.allCommandMask(), this);
-         rightBus.register(rightAngleController);
+         ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_right.properties");
          
-      }
-      catch (SocketException ex) {
+      } catch (SocketException ex) {
          System.err.println("ARDrone: " + ex);
       }
    }
@@ -367,8 +362,6 @@ public class ARDrone extends JFrame implements Runnable {
    private void loadProperties() {
       // Create the drone properties object
       configDrone = new Properties();
-      configLeftSensor = new Properties();
-      configRightSensor = new Properties();
       try {
          // Load the properties
          configDrone.load(new FileInputStream(CONFIG_DRONE_PROPERTIES));
@@ -383,16 +376,11 @@ public class ARDrone extends JFrame implements Runnable {
          checkState(!sp.isEmpty());
          speed = Float.parseFloat(sp);
          
-         sensorDataBasedir = configDrone.getProperty("sensor_basedir", "");
-         checkState(!sensorDataBasedir.isEmpty());
-         
          // Verify if the sensors property is set
          String leftSensor = configDrone.getProperty("left_sensor");
          String rightSensor = configDrone.getProperty("right_sensor");
          checkState(!leftSensor.isEmpty());
          checkState(!rightSensor.isEmpty());
-         configLeftSensor.load(new FileInputStream(leftSensor));
-         configRightSensor.load(new FileInputStream(rightSensor));
       } catch(FileNotFoundException ex){
          System.err.println("ARDrone.loadProperties: " + ex);
       } catch (IOException ex) {
@@ -496,107 +484,6 @@ public class ARDrone extends JFrame implements Runnable {
       controlThread.start();
 
    }
-
-    private void neuralControllerFromProperties(EventBus ebus, Properties configSensor) throws Exception {
-        checkNotNull(configSensor);
-        // Parse the movements and windows size
-        final String[] windowsStrings = configSensor.getProperty("windows_size", "").split(";");
-        final String[] movementsStrings = configSensor.getProperty("movements_size", "").split(";");
-        int[] windowsSize = new int[Math.min(windowsStrings.length, movementsStrings.length)];
-        int[] movementSize = new int[Math.min(windowsStrings.length, movementsStrings.length)];
-        for (int i = 0; i < windowsSize.length; i++) {
-            try {
-                windowsSize[i] = Integer.parseInt(windowsStrings[i]);
-            } catch (NumberFormatException ex) {
-                windowsSize[i] = MovementModel.DEFAULT_WINDOWSIZE;
-                System.err.println("ARDrone.createNeuralControllers.windowsSize : " + ex);
-            }
-            try {
-                movementSize[i] = Integer.parseInt(movementsStrings[i]);
-            } catch (NumberFormatException ex) {
-                movementSize[i] = MovementModel.DEFAULT_MOVEMENTSIZE;
-                System.err.println("ARDrone.createNeuralControllers.movementSize : " + ex);
-            }
-        }
-
-        // Define the movement model class name
-        String movementModelClassName = configSensor.getProperty("class_name", CONFIG_MOVEMENT_MODEL);
-        if (movementModelClassName.isEmpty()) {
-            movementModelClassName = CONFIG_MOVEMENT_MODEL;
-        }
-
-        // Parse the features
-        final String[] featuresStrings = configSensor.getProperty("features", "").split(";");
-        Features[] features;
-        if (configSensor.getProperty("features", "").isEmpty()) {
-            features = new Features[0];
-        } else {
-            features = new Features[featuresStrings.length];
-            for (int i = 0; i < features.length; i++) {
-                features[i] = Features.valueOf(featuresStrings[i].toUpperCase());
-            }
-        }
-
-        // Parse the rest
-        int timerMs = NeuralTimeCommand.DEFAULT_TIMER;
-        try {
-            timerMs = Integer.parseInt(configSensor.getProperty("timer_ms"));
-        } catch (NumberFormatException ex) {
-            System.err.println("ARDrone.createNeuralControllers.timerMs : " + ex);
-        }
-        int nbTimerMs = NeuralTimeCommand.DEFAULT_NB_TIMER;
-        try {
-            nbTimerMs = Integer.parseInt(configSensor.getProperty("nb_timer_ms"));
-        } catch (NumberFormatException ex) {
-            System.err.println("ARDrone.createNeuralControllers.nbTimerMs : " + ex);
-        }
-        double errorAccepted = NeuralController.ERROR_ACCEPT;
-        try {
-            errorAccepted = Double.parseDouble(configSensor.getProperty("error"));
-        } catch (Exception ex) {
-            System.err.println("ARDrone.createNeuralControllers.errorAccepted : " + ex);
-        }
-        String title = configSensor.getProperty("title", "Sensor");
-
-        // Retreive the network weight and cmdmap files
-        String weightFile = sensorDataBasedir + "/" + configSensor.getProperty("weight_file", NeuralController.MLP_CONFIG_FILE);
-        String cmdmapFile = sensorDataBasedir + "/" + configSensor.getProperty("cmdmap_file", weightFile + ".cmdmap");
-
-        // Load the movement model and create the neural controller
-        // Load the movement model class
-        Class movementModelClass = ClassLoader.getSystemClassLoader().loadClass(movementModelClassName);
-        MovementModel movementModel = null;
-
-        // Create the movement model with the constructor containing the Features list
-        try {
-            Constructor constructor = movementModelClass.getConstructor(EventBus.class, int[].class, int[].class, Features[].class);
-            movementModel = (MovementModel) constructor.newInstance(ebus, windowsSize, movementSize, features);
-        } catch (NoSuchMethodException ex) {
-            // Will fallback on other constructor
-        }
-
-        // If there is no constructor with the Features list create without the features
-        if (movementModel == null) {
-            try {
-                Constructor constructor = movementModelClass.getConstructor(EventBus.class, int[].class, int[].class);
-                movementModel = (MovementModel) constructor.newInstance(ebus, windowsSize, movementSize);
-            } catch (NoSuchMethodException ex) {
-                System.err.println("ARDrone.createNeuralControllers.contructor : " + ex);
-            }
-        }
-
-        // Create the neural controller
-        NeuralController controller = new NeuralController(
-                ActionCommand.allCommandMask(), this,
-                timerMs, nbTimerMs,
-                title,
-                errorAccepted,
-                weightFile,
-                cmdmapFile);
-        
-        ebus.register(movementModel);
-        ebus.register(controller);
-    }
 
    /**
     * Is fired when a new video frame is received by the VideoReader. The

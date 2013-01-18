@@ -107,17 +107,7 @@ public abstract class MovementModel {
             }
         }
     }
-
-    /**
-     * Is fired each time a new sample is received from the Bluetooth device.
-     *
-     * @param sample the sample received
-     */
-    @Subscribe
-    public void sampleReceived(AccelGyro.UncalibratedSample sample) {
-        addAccelGyroSample(sample);
-    }
-
+    
     /**
      * Abstract method for the calculation of the features. Its implementation
      * depends on the features that will be processed.
