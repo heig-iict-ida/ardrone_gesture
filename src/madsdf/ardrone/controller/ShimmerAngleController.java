@@ -24,8 +24,16 @@ import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
  */
 public class ShimmerAngleController extends DroneController {
     static enum CmdMap {
-        LEFT,
-        RIGHT
+        RIGHT(new ActionCommand[]{ActionCommand.GORIGHT, ActionCommand.GOLEFT,
+             ActionCommand.GOBACKWARD, ActionCommand.GOFORWARD}),
+        LEFT(new ActionCommand[]{ActionCommand.ROTATELEFT, ActionCommand.ROTATERIGHT,
+            ActionCommand.GOTOP, ActionCommand.GODOWN});
+        
+        final ActionCommand[] actions;
+        CmdMap(ActionCommand[] actions) {
+            checkState(actions.length == 4);
+            this.actions = actions;
+        }
     }
     private HashMap<ActionCommand, Boolean> activeActions = Maps.newHashMap();
     private final CmdMap cmdmap;
@@ -40,10 +48,10 @@ public class ShimmerAngleController extends DroneController {
     
     public ShimmerAngleController(ImmutableSet<ActionCommand> actionMask, ARDrone drone, CmdMap cmdmap) {
         super(actionMask, drone);
-        activeActions.put(ActionCommand.GOLEFT, false);
-        activeActions.put(ActionCommand.GORIGHT, false);
-        activeActions.put(ActionCommand.GOFORWARD, false);
-        activeActions.put(ActionCommand.GOBACKWARD, false);
+        activeActions.put(cmdmap.actions[0], false);
+        activeActions.put(cmdmap.actions[1], false);
+        activeActions.put(cmdmap.actions[2], false);
+        activeActions.put(cmdmap.actions[3], false);
         this.cmdmap = cmdmap;
     }
     
@@ -60,13 +68,13 @@ public class ShimmerAngleController extends DroneController {
     }
     
     private void actionsFromAngles(AngleEvent event) {
-        activeActions.put(ActionCommand.GOLEFT, 
+        activeActions.put(cmdmap.actions[0], 
                           event.pitch > -60 && event.pitch < -20 );
-        activeActions.put(ActionCommand.GORIGHT,
+        activeActions.put(cmdmap.actions[1],
                           event.pitch > 20 && event.pitch < 60);
-        activeActions.put(ActionCommand.GOFORWARD,
+        activeActions.put(cmdmap.actions[2],
                           event.roll > -60 && event.roll < -20);
-        activeActions.put(ActionCommand.GOBACKWARD,
+        activeActions.put(cmdmap.actions[3],
                           event.roll > 20 && event.roll < 60);
     }
 }
