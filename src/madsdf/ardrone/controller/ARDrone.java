@@ -276,8 +276,8 @@ public class ARDrone extends JFrame implements Runnable {
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
         // TODO: Should use configDrone.controller property
-        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "positions_sensor_gauche.properties");
-        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "positions_sensor_droit.properties");
+        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "mouvements_sensor_droit.properties");
+        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "mouvements_sensor_gauche.properties");
 
         ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
         ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
