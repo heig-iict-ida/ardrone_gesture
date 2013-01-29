@@ -39,13 +39,9 @@ public class MeanDifferenceMedianMovement extends MovementModel {
     * @param iterator the iterator used to process the features
     */
    @Override
-   protected void processFeatures(ListIterator<AccelGyro.UncalibratedSample> iterator) {
-      
+   protected float[] processFeatures(AccelGyro.UncalibratedSample[] window) {
       // Verify the feature array
-      float[] features = getFeatures();
-      if(features == null){
-         features = new float[NB_FEATURES * NB_LINES];
-      }
+      float[] features = new float[NB_FEATURES * NB_LINES];
       
       // Copy all the sample values
       LinkedList<Float>[] sampleCopy = new LinkedList[NB_LINES];
@@ -53,7 +49,7 @@ public class MeanDifferenceMedianMovement extends MovementModel {
          sampleCopy[i] = new LinkedList<Float>();
       
       // Initialisation of the features array
-      AccelGyro.UncalibratedSample sample = iterator.next();
+      AccelGyro.UncalibratedSample sample = window[0];
       
       // The maximum values
       float[] maxValue = new float[NB_LINES];
@@ -74,8 +70,8 @@ public class MeanDifferenceMedianMovement extends MovementModel {
       }
       
       // For each sample
-      while(iterator.hasNext()){
-         sample = iterator.next();
+      for (int j = 1; j < window.length; ++j) {
+          sample = window[j];
          
          // For each value of the AccelGyroSample
          for(int i = 0; i < NB_LINES; i++){
@@ -117,6 +113,6 @@ public class MeanDifferenceMedianMovement extends MovementModel {
       for(int i = 0; i < features.length; i++)
          features[i] = (NORM_MAX - NORM_MIN) * ((features[i] - COL_MIN) / (COL_MAX - COL_MIN)) + NORM_MIN;
       
-      setFeatures(features);
+      return features;
    }   
 }

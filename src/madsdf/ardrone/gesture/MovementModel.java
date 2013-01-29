@@ -3,10 +3,15 @@ package madsdf.ardrone.gesture;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.event.EventListenerList;
+import madsdf.ardrone.utils.WindowAccumulator;
 import madsdf.shimmer.gui.AccelGyro;
 
 /**
@@ -22,7 +27,6 @@ import madsdf.shimmer.gui.AccelGyro;
  */
 public abstract class MovementModel {
     public static class MovementFeatures {
-
         public final float[] data;
 
         public MovementFeatures(float[] f) {
@@ -39,19 +43,13 @@ public abstract class MovementModel {
     private int[] windowSize;
     // The array of the movements size (represent the number of sample in one movement)
     private int[] movementSize;
-    // The array of counters for each precedent movement size and windows size config
-    private int[] counter;
     // The biggest movement size of the array
     private int maxMovementSize = 0;
-    // The sample buffer maximum size
-    private int maxBufferSize;
-    // The calculated features of the last movement
-    private float[] features;
-    // The sample buffer
-    private CopyOnWriteArrayList<AccelGyro.UncalibratedSample> movement = new CopyOnWriteArrayList<AccelGyro.UncalibratedSample>();
-    // The movement listener list
-    private final EventListenerList listeners = new EventListenerList();
+    private WindowAccumulator[] accumulators;
+    
     private EventBus ebus;
+    
+    private long prevWindowTimestamp = System.currentTimeMillis();
 
     /**
      * Constructor with all configurations
@@ -76,9 +74,11 @@ public abstract class MovementModel {
         }
         setMovementSize(movementSize);
 
-        // Define the counter array
-        this.counter = new int[movementSize.length];
-        Arrays.fill(counter, 0);
+        accumulators = new WindowAccumulator[movementSize.length];
+        for (int i = 0; i < movementSize.length; ++i) {
+            // TODO: Fixed step is not too good... make it a parameter
+            accumulators[i] = new WindowAccumulator<AccelGyro.UncalibratedSample>(movementSize[i], 10);
+        }
     }
 
     /**
@@ -88,21 +88,15 @@ public abstract class MovementModel {
      * @param sample the new sample to add
      */
     public void addAccelGyroSample(AccelGyro.UncalibratedSample sample) {
-
-        // Add the sample
-        getMovement().add(sample);
-
-        // Clear the buffer regularly, avoids memory leaks
-        if (getMovement().size() > maxBufferSize) {
-            getMovement().retainAll(getMovement().subList(getMovement().size() - 2 * maxMovementSize, getMovement().size() - 1));
-        }
-
-        // Use a sliding windows, and process the features whenever the window has completely slid
-        // and the movement size is enough for all the size configurations
-        for (int i = 0; i < windowSize.length; i++) {
-            if (counter[i]++ >= windowSize[i] && getMovement().size() >= movementSize[i]) {
-                counter[i] = 0;
-                processFeatures(getMovement().listIterator(getMovement().size() - movementSize[i]));
+        // Accumulate the sample and if a new window is available, process it
+        for (int i = 0; i < windowSize.length; ++i) {
+            List<AccelGyro.UncalibratedSample> window = accumulators[i].add(sample);
+            if (window != null) {
+                final float[] features = processFeatures(window.toArray(new AccelGyro.UncalibratedSample[1]));
+                final long now = System.currentTimeMillis();
+                double elapsedS = (now - prevWindowTimestamp) / 1000.0;
+                //System.out.println("[" + this + "] Time since last window : " + elapsedS);
+                prevWindowTimestamp = now;
                 ebus.post(new MovementFeatures(features));
             }
         }
@@ -114,31 +108,7 @@ public abstract class MovementModel {
      *
      * @param iterator the iterator used to process the features
      */
-    protected abstract void processFeatures(ListIterator<AccelGyro.UncalibratedSample> iterator);
-
-    /**
-     * @return the actual movement
-     */
-    protected CopyOnWriteArrayList<AccelGyro.UncalibratedSample> getMovement() {
-        return movement;
-    }
-
-    /**
-     * @param features the features to set
-     */
-    protected void setFeatures(float[] features) {
-        this.features = features;
-    }
-
-    /**
-     * @return the actual features
-     */
-    public float[] getFeatures() {
-        if (features == null) {
-            return null;
-        }
-        return features.clone();
-    }
+    protected abstract float[] processFeatures(AccelGyro.UncalibratedSample[] window);
 
     /**
      * @param movementSize the movementSize to set
@@ -153,8 +123,5 @@ public abstract class MovementModel {
         for (int i = 1; i < movementSize.length; i++) {
             maxMovementSize = Math.max(maxMovementSize, movementSize[i]);
         }
-
-        // Set the sample buffer maximum size
-        this.maxBufferSize = Math.max(DEFAULT_MAX_BUFFER_SIZE, 3 * maxMovementSize);
     }
 }
