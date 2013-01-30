@@ -88,13 +88,14 @@ public abstract class MovementModel {
      * @param sample the new sample to add
      */
     public void addAccelGyroSample(AccelGyro.UncalibratedSample sample) {
+        //System.out.println("Sample : ax = " + sample.accel[0] + ", ay = " + sample.accel[1] + ", az = " + sample.accel[2]);
         // Accumulate the sample and if a new window is available, process it
         for (int i = 0; i < windowSize.length; ++i) {
             List<AccelGyro.UncalibratedSample> window = accumulators[i].add(sample);
             if (window != null) {
                 final float[] features = processFeatures(window.toArray(new AccelGyro.UncalibratedSample[1]));
                 final long now = System.currentTimeMillis();
-                double elapsedS = (now - prevWindowTimestamp) / 1000.0;
+                //double elapsedS = (now - prevWindowTimestamp) / 1000.0;
                 //System.out.println("[" + this + "] Time since last window : " + elapsedS);
                 prevWindowTimestamp = now;
                 ebus.post(new MovementFeatures(features));

@@ -161,8 +161,8 @@ public class ARDrone extends JFrame implements Runnable {
         }
 
         // Create the drone controller
-        final String rightShimmerID = "9EDB";
-        final String leftShimmerID = "BDCD";
+        final String rightShimmerID = "BDCD";
+        final String leftShimmerID = "9EDB";
         ARDrone arDrone = new ARDrone(ip, leftShimmerID, rightShimmerID);
     }
 
