@@ -48,10 +48,30 @@ public class DTW {
     // sum of DTW distance between corresponding axis of two series
     // data is NxM where N is the number of axis and M the number of values
     public static float allAxisDTW(float[][] serie1, float[][] serie2) {
+        // TODO: This is wrong, need to do DTW on all 3 axis at the same time
+        // (we should use the same path on all axis)
         checkState(serie1.length == serie2.length);
         float sum = 0;
         for (int i = 0; i < serie1.length; ++i) {
             sum += dtwDistance(serie1[i], serie2[i]);
+        }
+        return sum;
+    }
+    
+    public static float euclideanDist(float[] v1, float[] v2) {
+        checkState(v1.length == v2.length);
+        float sum = 0;
+        for (int i = 0; i < v1.length; ++i) {
+            sum += (v1[i] - v2[i]) * (v1[i] - v2[i]);
+        }
+        return (float) Math.sqrt(sum);
+    }
+    
+    public static float allAxisEuclidean(float[][] serie1, float[][] serie2) {
+        checkState(serie1.length == serie2.length);
+        float sum = 0;
+        for (int i = 0; i < serie1.length; ++i) {
+            sum += euclideanDist(serie1[i], serie2[i]);
         }
         return sum;
     }

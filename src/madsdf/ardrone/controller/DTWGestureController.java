@@ -94,6 +94,14 @@ public class DTWGestureController extends DroneController {
         return data;
     }
     
+    public float average(List<Float> lst) {
+        float sum = 0;
+        for (Float f: lst) {
+            sum += f;
+        }
+        return sum / lst.size();
+    }
+    
     private void matchWindow(float[][] windowAccel) {
         Map<Integer, Float> cmdDists = Maps.newHashMap();
         for (Integer command: gestureTemplates.keySet()) {
@@ -101,11 +109,13 @@ public class DTWGestureController extends DroneController {
             
             ArrayList<Float> dists = Lists.newArrayList();
             for (Gesture g: templates) {
-                dists.add(DTW.allAxisDTW(windowAccel, g.accel));
+                //dists.add(DTW.allAxisDTW(windowAccel, g.accel));
+                dists.add(DTW.allAxisEuclidean(windowAccel, g.accel));
             }
             
-            final float minDist = Collections.min(dists);
-            cmdDists.put(command, minDist);
+            //final float dist = Collections.min(dists);
+            final float dist = average(dists);
+            cmdDists.put(command, dist);
         }
         distFrame.addToChart(cmdDists);
     }
