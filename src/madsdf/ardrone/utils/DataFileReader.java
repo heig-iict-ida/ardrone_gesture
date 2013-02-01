@@ -30,7 +30,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
  */
 public class DataFileReader {    
     private static final Pattern COMMAND_REGEXP = Pattern.compile(
-            "COMMAND\\s(\\d+)\\sSAMPLE\\s(\\d+)");
+            "^\\s*COMMAND\\s(\\d+)\\sSAMPLE\\s(\\d+).*$");
     
     public static class Sample {
         public final int command;
