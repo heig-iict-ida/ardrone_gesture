@@ -32,12 +32,12 @@ public class DataFileReader {
     private static final Pattern COMMAND_REGEXP = Pattern.compile(
             "^\\s*COMMAND\\s(\\d+)\\sSAMPLE\\s(\\d+).*$");
     
-    public static class Sample {
+    public static class Gesture {
         public final int command;
         public final int sample;
         public final float[][] accel;
         public final float[][] gyro;
-        public Sample(int cmd, int sam, float[][] accel, float[][] gyro) {
+        public Gesture(int cmd, int sam, float[][] accel, float[][] gyro) {
             this.command = cmd;
             this.sample = sam;
             this.accel = accel;
@@ -64,7 +64,7 @@ public class DataFileReader {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            final Sample other = (Sample) obj;
+            final Gesture other = (Gesture) obj;
             return Objects.equal(other.command, command) &&
                    Objects.equal(other.sample, sample) &&
                    Arrays.deepEquals(other.accel, accel) &&
@@ -78,11 +78,11 @@ public class DataFileReader {
         reader = new BufferedReader(input);
     }
     
-    public List<Sample> readAll() throws IOException {
-        List<Sample> samples = Lists.newArrayList();
+    public List<Gesture> readAll() throws IOException {
+        List<Gesture> samples = Lists.newArrayList();
         String line = reader.readLine();
         while (line != null) {
-            System.out.println("line : " + line);
+            //System.out.println("line : " + line);
             final Matcher cmdMatcher = COMMAND_REGEXP.matcher(line);
             cmdMatcher.matches();
             final int cmdNum = Integer.parseInt(cmdMatcher.group(1));
@@ -93,7 +93,7 @@ public class DataFileReader {
             final float[] gyroX = readFloatArray("Gyro X : ");
             final float[] gyroY = readFloatArray("Gyro Y : ");
             final float[] gyroZ = readFloatArray("Gyro Z : ");
-            samples.add(new Sample(cmdNum, sampleNum,
+            samples.add(new Gesture(cmdNum, sampleNum,
                                    new float[][]{accX, accY, accZ},
                                    new float[][]{gyroX, gyroY, gyroZ}));
             line = reader.readLine();

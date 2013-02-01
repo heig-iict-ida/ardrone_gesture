@@ -35,7 +35,7 @@ public class DataFileReaderTest {
         
         System.out.println("readAll");
         DataFileReader instance = new DataFileReader(new StringReader(data));
-        DataFileReader.Sample s1 = new DataFileReader.Sample(5, 7,
+        DataFileReader.Gesture s1 = new DataFileReader.Gesture(5, 7,
                 new float[][]{
                     {2803, 2815, 2797, 2776},
                     {2311, 2316, 2291, 2294},
@@ -45,7 +45,7 @@ public class DataFileReaderTest {
                     {1661, 1661, 1661, 1664},
                     {1840, 1840, 1843, 1846}}
                 );
-        DataFileReader.Sample s2 = new DataFileReader.Sample(32, 234,
+        DataFileReader.Gesture s2 = new DataFileReader.Gesture(32, 234,
                 new float[][]{
                     {21, 22, 23, 24.25f},
                     {25, 26, 27, 28},
@@ -55,7 +55,7 @@ public class DataFileReaderTest {
                     {5, 6, 7, 8},
                     {9, 10, 11, 12}}
                 );
-        List<DataFileReader.Sample> expResult = Lists.newArrayList(s1, s2);
+        List<DataFileReader.Gesture> expResult = Lists.newArrayList(s1, s2);
         List result = instance.readAll();
         assertEquals(expResult, result);
     }

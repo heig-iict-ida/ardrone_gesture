@@ -281,6 +281,8 @@ public class ARDrone extends JFrame implements Runnable {
 
         ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
         ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
+        
+        DTWGestureController rightGestureController = DTWGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
     }
 
     /**

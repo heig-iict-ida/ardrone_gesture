@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import madsdf.shimmer.gui.AccelGyro;
@@ -23,9 +24,9 @@ public class WindowAccumulator<T> {
     // Add a sample to the accumulator. If this creates a new window,
     // the window is returned (an array of size windowSize). Otherwise,
     // null is returned
-    public List<T> add(T s) {
+    public ArrayList<T> add(T s) {
         checkState(buffer.size() <= windowSize);
-        List<T> ret = null;
+        ArrayList<T> ret = null;
         buffer.addLast(s);
         if (buffer.size() == windowSize) {
             ret = Lists.newArrayList(buffer.iterator());
