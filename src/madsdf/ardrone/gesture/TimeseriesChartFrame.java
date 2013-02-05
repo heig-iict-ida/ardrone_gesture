@@ -21,7 +21,7 @@ import org.jfree.data.time.TimeSeriesCollection;
  *
  * @author julien
  */
-public class DTWDistanceFrame extends javax.swing.JFrame {
+public class TimeseriesChartFrame extends javax.swing.JFrame {
     private Map<Integer, TimeSeries> series;
     private JFreeChart chart;
     
@@ -31,24 +31,26 @@ public class DTWDistanceFrame extends javax.swing.JFrame {
     /**
      * Creates new form DTWDistanceFrame
      */
-    public DTWDistanceFrame(String title, Integer[] gestureIDs,
-                            String[] gestureNames) {
+    public TimeseriesChartFrame(String title,
+                                String xAxisLabel, String yAxisLabel,
+                                Integer[] seriesIDs,
+                                String[] seriesNames) {
         initComponents();
         this.setTitle(title);
         
-        checkState(gestureIDs.length == gestureNames.length);
+        checkState(seriesIDs.length == seriesNames.length);
         series = Maps.newHashMap();
         TimeSeriesCollection accelCol = new TimeSeriesCollection();
-        for (int i = 0; i < gestureNames.length; ++i) {
-            final TimeSeries s = new TimeSeries(gestureNames[i]);
-            series.put(gestureIDs[i], s);
+        for (int i = 0; i < seriesNames.length; ++i) {
+            final TimeSeries s = new TimeSeries(seriesNames[i]);
+            series.put(seriesIDs[i], s);
             accelCol.addSeries(s);
         }
         
         chart = ChartFactory.createTimeSeriesChart(
-                "Distance to gesture templates",
-                "Windows",
-                "DTW distance",
+                title,
+                xAxisLabel,
+                yAxisLabel,
                 accelCol,
                 true,
                 false,
@@ -63,14 +65,14 @@ public class DTWDistanceFrame extends javax.swing.JFrame {
         axisAcc.setMinorTickCount(10);
         axisAcc.setAutoRange(true);
         axisAcc.setFixedAutoRange(NUM_VISIBLE);     // Define the number of visible value
-        axisAcc.setTickLabelsVisible(false);  // Hide the axis labels
+        axisAcc.setTickLabelsVisible(true);  // Hide the axis labels
         
         ChartPanel cPanel = (ChartPanel)chartPanel;
         cPanel.setChart(chart);
     }
     
-    public void addToChart(Map<Integer, Float> commandDists) {
-        for (Map.Entry<Integer, Float> e : commandDists.entrySet()) {
+    public void addToChart(Map<Integer, Float> data) {
+        for (Map.Entry<Integer, Float> e : data.entrySet()) {
             series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue());
         }
         counter++;
