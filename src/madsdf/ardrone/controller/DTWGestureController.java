@@ -81,9 +81,9 @@ public class DTWGestureController extends DroneController {
         }
         
         // TODO: Hardcoding is bad.. this should be loaded from the properties
-        final Integer[] gestIds = new Integer[]{1, 2, 3, 4/*, 5, 6*/};
+        final Integer[] gestIds = new Integer[]{1, 2, 3, 4, 5, 6};
         final String[] gestNames = new String[]{"Avancer", "Droite", "Monter",
-            "Descendre"/*, "Rotation", "Bruit"*/};
+            "Descendre", "Rotation", "Bruit"};
         
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -180,8 +180,8 @@ public class DTWGestureController extends DroneController {
             
             ArrayList<Float> dists = Lists.newArrayList();
             for (Gesture g: templates) {
-                dists.add(DTW.allAxisDTW(windowAccel, g.accel));
-                //dists.add(DTW.allAxisEuclidean(windowAccel, g.accel));
+                //dists.add(DTW.allAxisDTW(windowAccel, g.accel));
+                dists.add(DTW.allAxisEuclidean(windowAccel, g.accel));
             }
             
             final float dist = Collections.min(dists);
@@ -202,33 +202,36 @@ public class DTWGestureController extends DroneController {
         stdDevFrame.addToChart(chartData);
         
         // Finally, decide if we detected something
-        decideGesture(knn.votesPerClass, meanStddev);
+        decideGesture(knn, meanStddev);
     }
     
-    // Ordering for votesPerClass
-    private static final Ordering<Entry<Integer, Float>> votesOrdering =
-            new Ordering<Entry<Integer, Float>>() {
-                @Override
-                public int compare(Entry<Integer, Float> t, Entry<Integer, Float> t1) {
-                    return Floats.compare(t.getValue(), t1.getValue());
-                }
-            }.reverse();
-    
-    private void decideGesture(final Map<Integer, Float> votesPerClass,
+    private void decideGesture(final KNN knn,
                                float stddev) {
         Map<Integer, Float> detections = Maps.newHashMap();
         for (Integer command: gestureTemplates.keySet()) {
             detections.put(command, 0.0f);
         }
         
-        if (stddev > 4000) {
+        if (stddev > 2000) {
             // Sort by number of votes
-            List<Entry<Integer, Float>> l = votesOrdering.sortedCopy(votesPerClass.entrySet());
+            List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final Entry<Integer, Float> nearest = l.get(0);
             final Entry<Integer, Float> secondNearest = l.get(1);
             final float nnratio = secondNearest.getValue() / nearest.getValue();
-            if (nnratio < 0.8) {
-                detections.put(nearest.getKey(), 1.0f);
+            
+            List<Entry<Integer, Float>> dl = Lists.newArrayList(knn.distPerClass.entrySet());
+            final float bestClassAvgDist = dl.get(0).getValue();
+            System.out.println("--- decideGesture");
+            System.out.println("best class : " + nearest.getKey() + ", avg dist : " + bestClassAvgDist);
+            Entry<Float, Gesture> nearestEntry = knn.nearest.get(0);
+            System.out.println("nearest : " + nearestEntry.getValue().sample
+                    + " dist = " + nearestEntry.getKey());
+            System.out.println("nnratio : " + nnratio);
+            final int command = nearest.getKey();
+            if (nnratio < 0.8 && command < 5) { // Disable rotation and noise commands
+                if ((stddev > 4000) || (command == 4 && stddev > 2000)) {
+                    detections.put(command, 1.0f);
+                }
             }
         }
         

@@ -27,6 +27,14 @@ public class MathUtils {
         }
     }
     
+    public static float[][] medianFilter(float[][] serie, int winsize) {
+        float[][] out = new float[serie.length][];
+        for (int i = 0; i < serie.length; ++i) {
+            out[i] = medianFilter(serie[i], winsize);
+        }
+        return out;
+    }
+    
     public static float[] medianFilter(float[] serie, int winsize) {
         float[] out = new float[serie.length];
         for (int i = 0; i < serie.length; ++i) {

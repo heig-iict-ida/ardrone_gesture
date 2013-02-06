@@ -48,8 +48,14 @@ public class KNN {
                // Contains (distance, gesture)
         TreeMap<Float, DataFileReader.Gesture> gestureDistances = Maps.newTreeMap();
         for (DataFileReader.Gesture g : gestureTemplates.values()) {
-            final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
+            //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
+            final float dist = DTW.allAxisEuclidean(
+                    MathUtils.medianFilter(windowAccel, 10), 
+                    MathUtils.medianFilter(g.accel, 10));
             //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
+            /*final float dist = DTW.allAxisDTW(
+                    MathUtils.medianFilter(windowAccel, 10), 
+                    MathUtils.medianFilter(g.accel, 10));*/
             gestureDistances.put(dist, g);
         }
         
@@ -81,7 +87,7 @@ public class KNN {
         return builder.build();
     }
     
-    private final ImmutableList<Entry<Float, Gesture>> closest;
+    public final ImmutableList<Entry<Float, Gesture>> nearest;
     // For each class, contains the number of nearest neighbors of this class
     // The iteration order over this map is fixed and in decreasing order of
     // class popularity
@@ -90,7 +96,7 @@ public class KNN {
     
     private KNN(Iterable<Integer> allClasses,
                 Iterable<Entry<Float, Gesture>> closest) {
-        this.closest = ImmutableList.copyOf(closest);
+        this.nearest = ImmutableList.copyOf(closest);
         
         // Compute votes per class and average distance to class
         Map<Integer, Float> _votesPerClass = Maps.newHashMap();
@@ -118,14 +124,14 @@ public class KNN {
     }
     
     public float getNeighborDist(int neighbor) {
-        return closest.get(neighbor).getKey();
+        return nearest.get(neighbor).getKey();
     }
     
     public int getNeighborClass(int neighbor) {
-        return closest.get(neighbor).getValue().command;
+        return nearest.get(neighbor).getValue().command;
     }
     
     public int numNeighbors() {
-        return closest.size();
+        return nearest.size();
     }
 }
