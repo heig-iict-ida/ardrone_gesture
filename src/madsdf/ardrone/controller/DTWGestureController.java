@@ -8,8 +8,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.google.common.primitives.Floats;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,6 +33,7 @@ import madsdf.ardrone.utils.PropertiesReader;
 import madsdf.ardrone.utils.WindowAccumulator;
 import madsdf.shimmer.gui.AccelGyro;
 import javax.swing.SwingUtilities;
+import madsdf.ardrone.utils.KNN;
 
 /**
  * Controller based on matching incoming measurements with gesture templates
@@ -59,7 +63,9 @@ public class DTWGestureController extends DroneController {
     private TimeseriesChartFrame distFrame;
     private TimeseriesChartFrame stdDevFrame;
     private TimeseriesChartFrame knnFrame;
-    //private TimeseriesChartFrame scoreFrame;
+    private TimeseriesChartFrame detectedFrame;
+    
+    private static final int KNN_K = 10;
     
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<Gesture> gestures) {
@@ -91,16 +97,16 @@ public class DTWGestureController extends DroneController {
                         "KNN votes",
                         "Windows", "votes", gestIds, gestNames);
                 DTWGestureController.this.knnFrame.setVisible(true);
-                                
-                /*DTWGestureController.this.scoreFrame = new TimeseriesChartFrame(
-                        "Score",
-                        "Windows", "e^-dist", gestIds, gestNames);
-                DTWGestureController.this.scoreFrame.setVisible(true);*/
                 
                 DTWGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
                         "Windows", "Stddev", new Integer[]{0}, new String[]{"Stddev"});
                 DTWGestureController.this.stdDevFrame.setVisible(true);
+                
+                DTWGestureController.this.detectedFrame = new TimeseriesChartFrame(
+                        "Detected gestures",
+                        "Windows", "Detected", gestIds, gestNames);
+                DTWGestureController.this.detectedFrame.setVisible(true);
             }
         });
     }
@@ -142,8 +148,7 @@ public class DTWGestureController extends DroneController {
     
     // Returns a map of (class, #votes). The class with the highest number of
     // votes should be kept
-    private Map<Integer, Integer> knnClassify(int k, float[][] windowAccel/*,
-                                              Map<Integer, Float> scorePerClass*/) {
+    /*private Map<Integer, Integer> knnClassify(int k, float[][] windowAccel) {
         // Contains (distance, gesture)
         TreeMap<Float, Gesture> gestureDistances = Maps.newTreeMap();
         for (Gesture g : gestureTemplates.values()) {
@@ -151,38 +156,6 @@ public class DTWGestureController extends DroneController {
             //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
             gestureDistances.put(dist, g);
         }
-        /*FluentIterable<Entry<Float, Gesture>> closest = FluentIterable
-                .from(gestureDistances.entrySet())
-                .limit(k);
-        
-        Map<Integer, Integer> votesPerClass = Maps.newHashMap();
-        for (Entry<Float, Gesture> e: closest) {
-            final Gesture g = e.getValue();
-            
-            Integer v = votesPerClass.get(g.command);
-            if (v == null) {
-                votesPerClass.put(g.command, 1);
-            } else {
-                votesPerClass.put(g.command, v + 1);
-            }
-            
-            Float f = scorePerClass.get(g.command);
-            //final float dist = e.getKey() / 10000.0f;
-            //final float score = (float) Math.exp(-dist);
-            final float score = e.getKey();
-            if (f == null) {
-                scorePerClass.put(g.command, score);
-            } else {
-                scorePerClass.put(g.command, f + score);
-            }
-        }
-        
-        // Compute average score
-        for (Entry<Integer, Float> e: scorePerClass.entrySet()) {
-            if (e.getValue() != 0) { // if == 0, doesn't exist in votesPerClass
-                scorePerClass.put(e.getKey(), e.getValue() / (float) votesPerClass.get(e.getKey()));
-            }
-        }*/
         FluentIterable<Gesture> closest = FluentIterable
                 .from(gestureDistances.values())
                 .limit(k);
@@ -198,7 +171,7 @@ public class DTWGestureController extends DroneController {
             }
         }
         return votesPerClass;
-    }
+    }*/
     
     private void matchWindow(float[][] windowAccel) {
         Map<Integer, Float> cmdDists = Maps.newHashMap();
@@ -217,29 +190,49 @@ public class DTWGestureController extends DroneController {
         }
         distFrame.addToChart(cmdDists);
         
-        /*Map<Integer, Float> scorePerClass = Maps.newHashMap();
-        for (Integer command: gestureTemplates.keySet()) {
-            scorePerClass.put(command, 0.0f);
-        }
-        Map<Integer, Integer> _votesPerClass = knnClassify(10, windowAccel, scorePerClass);*/
-        Map<Integer, Integer> _votesPerClass = knnClassify(10, windowAccel);
-        // Convert to <Integer, Float>
-        Map<Integer, Float> votesPerClass = Maps.newHashMap();
-        for (Integer command: gestureTemplates.keySet()) {
-            votesPerClass.put(command, 0.0f);
-        }
-        for (Entry<Integer, Integer> e: _votesPerClass.entrySet()) { 
-            votesPerClass.put(e.getKey(), (float)e.getValue());
-        }
+        KNN knn = KNN.classify(KNN_K, windowAccel, gestureTemplates);
+        
         //System.out.println(_tmp);
-        knnFrame.addToChart(votesPerClass);
-        //scoreFrame.addToChart(scorePerClass);
+        knnFrame.addToChart(knn.votesPerClass);
         
         float meanStddev = (stddev(windowAccel[0]) + stddev(windowAccel[1])
                 + stddev(windowAccel[2])) / 3.0f;
         Map<Integer, Float> chartData = Maps.newHashMap();
         chartData.put(0, meanStddev);
         stdDevFrame.addToChart(chartData);
+        
+        // Finally, decide if we detected something
+        decideGesture(knn.votesPerClass, meanStddev);
+    }
+    
+    // Ordering for votesPerClass
+    private static final Ordering<Entry<Integer, Float>> votesOrdering =
+            new Ordering<Entry<Integer, Float>>() {
+                @Override
+                public int compare(Entry<Integer, Float> t, Entry<Integer, Float> t1) {
+                    return Floats.compare(t.getValue(), t1.getValue());
+                }
+            }.reverse();
+    
+    private void decideGesture(final Map<Integer, Float> votesPerClass,
+                               float stddev) {
+        Map<Integer, Float> detections = Maps.newHashMap();
+        for (Integer command: gestureTemplates.keySet()) {
+            detections.put(command, 0.0f);
+        }
+        
+        if (stddev > 4000) {
+            // Sort by number of votes
+            List<Entry<Integer, Float>> l = votesOrdering.sortedCopy(votesPerClass.entrySet());
+            final Entry<Integer, Float> nearest = l.get(0);
+            final Entry<Integer, Float> secondNearest = l.get(1);
+            final float nnratio = secondNearest.getValue() / nearest.getValue();
+            if (nnratio < 0.8) {
+                detections.put(nearest.getKey(), 1.0f);
+            }
+        }
+        
+        detectedFrame.addToChart(detections);
     }
     
     @Subscribe
