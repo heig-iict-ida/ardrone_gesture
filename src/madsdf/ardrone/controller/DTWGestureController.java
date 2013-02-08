@@ -58,14 +58,14 @@ public class DTWGestureController extends DroneController {
     
     private Multimap<Integer, Gesture> gestureTemplates = ArrayListMultimap.create();
     private WindowAccumulator accumulator =
-            new WindowAccumulator<AccelGyro.UncalibratedSample>(100, 10);
+            new WindowAccumulator<AccelGyro.UncalibratedSample>(150, 15);
     
     private TimeseriesChartFrame distFrame;
     private TimeseriesChartFrame stdDevFrame;
     private TimeseriesChartFrame knnFrame;
     private TimeseriesChartFrame detectedFrame;
     
-    private static final int KNN_K = 10;
+    private static final int KNN_K = 3;
     
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<Gesture> gestures) {
@@ -81,9 +81,9 @@ public class DTWGestureController extends DroneController {
         }
         
         // TODO: Hardcoding is bad.. this should be loaded from the properties
-        final Integer[] gestIds = new Integer[]{1, 2, 3, 4, 5, 6};
+        final Integer[] gestIds = new Integer[]{1, 2, 3, 4/*, 5, 6*/};
         final String[] gestNames = new String[]{"Avancer", "Droite", "Monter",
-            "Descendre", "Rotation", "Bruit"};
+            "Descendre"/*, "Rotation", "Bruit"*/};
         
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -212,7 +212,7 @@ public class DTWGestureController extends DroneController {
             detections.put(command, 0.0f);
         }
         
-        if (stddev > 2000) {
+        /*if (stddev > 2000) {
             // Sort by number of votes
             List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final Entry<Integer, Float> nearest = l.get(0);
@@ -231,6 +231,21 @@ public class DTWGestureController extends DroneController {
             if (nnratio < 0.8 && command < 5) { // Disable rotation and noise commands
                 if ((stddev > 4000) || (command == 4 && stddev > 2000)) {
                     detections.put(command, 1.0f);
+                }
+            }
+        }*/
+        
+        if (stddev > 2000) {
+            List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
+            final int bestClass = l.get(0).getKey();
+            //System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
+            
+            // Check that nearest neighbor is of majority class
+            if (knn.getNeighborClass(0) == bestClass) {
+                // Check that nearest neighbor dist is below threshold
+                //System.out.println("dist : " + knn.getNeighborDist(0));
+                if (knn.getNeighborDist(0) < 10000) {
+                    detections.put(bestClass, 1.0f);
                 }
             }
         }

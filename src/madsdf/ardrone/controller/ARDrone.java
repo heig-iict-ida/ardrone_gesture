@@ -261,25 +261,25 @@ public class ARDrone extends JFrame implements Runnable {
         commandSender = new Thread(this);
 
         // Launch the configuration of the drone
-        startConfig();
+        //startConfig();
 
         // Create the keyboard controller
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
-        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
-        leftShimmer.setVisible(true);
+        //leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
 
-        EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
+        //EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
         // TODO: Should use configDrone.controller property
         NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "mouvements_sensor_droit.properties");
-        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "mouvements_sensor_gauche.properties");
+        //NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "mouvements_sensor_gauche.properties");
 
-        ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
+        //ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
         ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
         
         DTWGestureController rightGestureController = DTWGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
