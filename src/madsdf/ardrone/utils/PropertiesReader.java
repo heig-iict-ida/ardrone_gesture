@@ -7,11 +7,14 @@ package madsdf.ardrone.utils;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.Maps;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,6 +37,17 @@ public class PropertiesReader {
             Logger.getLogger(PropertiesReader.class.getName()).log(Level.SEVERE, null, ex);
             throw new RuntimeException(ex.toString());
         }
+    }
+    
+    public Map<String, String> getMap(String key) {
+        final String str = getString(key);
+        final String[] kvpairs = str.split(",");
+        Map<String, String> outMap = Maps.newHashMap();
+        for (String kv : kvpairs) {
+            final String[] keyvalue = kv.split(":");
+            outMap.put(keyvalue[0], keyvalue[1]);
+        }
+        return outMap;
     }
     
     public boolean hasKey(String key) {

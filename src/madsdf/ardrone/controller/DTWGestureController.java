@@ -3,6 +3,7 @@ package madsdf.ardrone.controller;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -47,12 +48,20 @@ public class DTWGestureController extends DroneController {
         
         String sensorDataBasedir = reader.getString("sensor_basedir");
         String templates_file = sensorDataBasedir + "/" + reader.getString("templates_file");
-        boolean calibrated = reader.getBoolean("template_calibrated");
+        
+        PropertiesReader descReader = new PropertiesReader(sensorDataBasedir + "/" + reader.getString("desc_file"));
+        boolean calibrated = descReader.getBoolean("calibrated");
+        // MovementsMap : convert from <String, String> to <Integer, String>
+        Map<String, String> _movementsMap = descReader.getMap("movements_map");
+        Map<Integer, String> movementsMap = Maps.newHashMap();
+        for (Entry<String, String> e : _movementsMap.entrySet()) {
+            movementsMap.put(Integer.parseInt(e.getKey()), e.getValue());
+        }
         
         final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
         List<Gesture> templates = freader.readAll();
          
-        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, calibrated);
+        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, movementsMap, calibrated);
         ebus.register(ctrl);
         return ctrl;
     }
@@ -70,13 +79,21 @@ public class DTWGestureController extends DroneController {
     
     private final boolean calibrated;
     
+    private final Map<Integer, String> movementsMap;
+    
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<Gesture> gestures,
+                                final Map<Integer, String> movementsMap,
                                 boolean calibrated) {
         super(actionMask, drone);
         this.calibrated = calibrated;
+        this.movementsMap = movementsMap;
         for (Gesture g: gestures) {
             gestureTemplates.put(g.command, g);
+            // Consistency check
+            checkState(movementsMap.containsKey(g.command),
+                       "movementsMap must contain mapping for command %d",
+                       g.command);
         }
         
         System.out.println("-- DTW Gesture Controller, number of templates per command");
@@ -85,34 +102,26 @@ public class DTWGestureController extends DroneController {
                     gestureTemplates.get(command).size());
         }
         
-        // TODO: Hardcoding is bad.. this should be loaded from the properties
-        final Integer[] gestIds = new Integer[]{1, 2, 3, 4 /*5, 6*/};
-        final String[] gestNames = new String[]{"Avancer", "Droite", "Monter",
-            "Descendre"/*, "Rotation", "Bruit"*/};
-        //final String[] gestNames = new String[]{"Avancer", "Droite", "Gauche",
-        //    "Monter", "Descendre"};
-        
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 DTWGestureController.this.distFrame = new TimeseriesChartFrame(
                         "Distance to gesture templates",
-                        "Windows", "DTW distance", gestIds, gestNames);
+                        "Windows", "DTW distance", movementsMap);
                 DTWGestureController.this.distFrame.setVisible(true);
                 
                 DTWGestureController.this.knnFrame = new TimeseriesChartFrame(
                         "KNN votes",
-                        "Windows", "votes", gestIds, gestNames);
+                        "Windows", "votes", movementsMap);
                 DTWGestureController.this.knnFrame.setVisible(true);
-                
                 DTWGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
-                        "Windows", "Stddev", new Integer[]{0}, new String[]{"Stddev"});
+                        "Windows", "Stddev", ImmutableMap.of(0, "Stddev"));
                 DTWGestureController.this.stdDevFrame.setVisible(true);
                 
                 DTWGestureController.this.detectedFrame = new TimeseriesChartFrame(
                         "Detected gestures",
-                        "Windows", "Detected", gestIds, gestNames);
+                        "Windows", "Detected", movementsMap);
                 DTWGestureController.this.detectedFrame.setVisible(true);
             }
         });

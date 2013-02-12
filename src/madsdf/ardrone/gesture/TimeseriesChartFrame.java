@@ -8,6 +8,7 @@ import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.Maps;
 import java.awt.Color;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -33,17 +34,15 @@ public class TimeseriesChartFrame extends javax.swing.JFrame {
      */
     public TimeseriesChartFrame(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                Integer[] seriesIDs,
-                                String[] seriesNames) {
+                                Map<Integer, String> seriesIDToName) {
         initComponents();
         this.setTitle(title);
         
-        checkState(seriesIDs.length == seriesNames.length);
         series = Maps.newHashMap();
         TimeSeriesCollection accelCol = new TimeSeriesCollection();
-        for (int i = 0; i < seriesNames.length; ++i) {
-            final TimeSeries s = new TimeSeries(seriesNames[i]);
-            series.put(seriesIDs[i], s);
+        for (Entry<Integer, String> e : seriesIDToName.entrySet()) {
+            final TimeSeries s = new TimeSeries(e.getValue());
+            series.put(e.getKey(), s);
             accelCol.addSeries(s);
         }
         
