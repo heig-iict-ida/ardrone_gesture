@@ -47,18 +47,19 @@ public class DTWGestureController extends DroneController {
         
         String sensorDataBasedir = reader.getString("sensor_basedir");
         String templates_file = sensorDataBasedir + "/" + reader.getString("templates_file");
+        boolean calibrated = reader.getBoolean("template_calibrated");
         
         final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
         List<Gesture> templates = freader.readAll();
          
-        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates);
+        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, calibrated);
         ebus.register(ctrl);
         return ctrl;
     }
     
     private Multimap<Integer, Gesture> gestureTemplates = ArrayListMultimap.create();
     private WindowAccumulator accumulator =
-            new WindowAccumulator<AccelGyro.UncalibratedSample>(150, 15);
+            new WindowAccumulator<AccelGyro.Sample>(150, 15);
     
     private TimeseriesChartFrame distFrame;
     private TimeseriesChartFrame stdDevFrame;
@@ -67,9 +68,13 @@ public class DTWGestureController extends DroneController {
     
     private static final int KNN_K = 3;
     
+    private final boolean calibrated;
+    
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
-                                ARDrone drone, List<Gesture> gestures) {
+                                ARDrone drone, List<Gesture> gestures,
+                                boolean calibrated) {
         super(actionMask, drone);
+        this.calibrated = calibrated;
         for (Gesture g: gestures) {
             gestureTemplates.put(g.command, g);
         }
@@ -81,9 +86,11 @@ public class DTWGestureController extends DroneController {
         }
         
         // TODO: Hardcoding is bad.. this should be loaded from the properties
-        final Integer[] gestIds = new Integer[]{1, 2, 3, 4/*, 5, 6*/};
+        final Integer[] gestIds = new Integer[]{1, 2, 3, 4 /*5, 6*/};
         final String[] gestNames = new String[]{"Avancer", "Droite", "Monter",
             "Descendre"/*, "Rotation", "Bruit"*/};
+        //final String[] gestNames = new String[]{"Avancer", "Droite", "Gauche",
+        //    "Monter", "Descendre"};
         
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -112,10 +119,10 @@ public class DTWGestureController extends DroneController {
     }
     
     private static float[][] windowAccelToFloat(
-            ArrayList<AccelGyro.UncalibratedSample> window) {
+            ArrayList<AccelGyro.Sample> window) {
         float[][] data = new float[3][window.size()];
         for (int i = 0; i < window.size(); ++i) {
-            final AccelGyro.UncalibratedSample sample = window.get(i);
+            final AccelGyro.Sample sample = window.get(i);
             data[0][i] = sample.accel[0];
             data[1][i] = sample.accel[1];
             data[2][i] = sample.accel[2];
@@ -145,33 +152,6 @@ public class DTWGestureController extends DroneController {
         }
         return (float) Math.sqrt(stddev);
     }
-    
-    // Returns a map of (class, #votes). The class with the highest number of
-    // votes should be kept
-    /*private Map<Integer, Integer> knnClassify(int k, float[][] windowAccel) {
-        // Contains (distance, gesture)
-        TreeMap<Float, Gesture> gestureDistances = Maps.newTreeMap();
-        for (Gesture g : gestureTemplates.values()) {
-            final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
-            //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
-            gestureDistances.put(dist, g);
-        }
-        FluentIterable<Gesture> closest = FluentIterable
-                .from(gestureDistances.values())
-                .limit(k);
-        
-        // Aggregate votes per class
-        Map<Integer, Integer> votesPerClass = Maps.newHashMap();
-        for (Gesture g: closest) {
-            Integer v = votesPerClass.get(g.command);
-            if (v == null) {
-                votesPerClass.put(g.command, 1);
-            } else {
-                votesPerClass.put(g.command, v + 1);
-            }
-        }
-        return votesPerClass;
-    }*/
     
     private void matchWindow(float[][] windowAccel) {
         Map<Integer, Float> cmdDists = Maps.newHashMap();
@@ -253,11 +233,24 @@ public class DTWGestureController extends DroneController {
         detectedFrame.addToChart(detections);
     }
     
-    @Subscribe
-    public void sampleReceived(AccelGyro.UncalibratedSample sample) {
-        ArrayList<AccelGyro.UncalibratedSample> window = accumulator.add(sample);
+    private void onSample(AccelGyro.Sample sample) {
+        ArrayList<AccelGyro.Sample> window = accumulator.add(sample);
         if (window != null) {
             matchWindow(windowAccelToFloat(window));
+        }
+    }
+    
+    @Subscribe
+    public void sampleReceived(AccelGyro.UncalibratedSample sample) {
+        if (!calibrated) {
+            onSample(sample);
+        }
+    }
+    
+    @Subscribe
+    public void sampledReceived(AccelGyro.CalibratedSample sample) {
+        if (calibrated) {
+            onSample(sample);
         }
     }
 }

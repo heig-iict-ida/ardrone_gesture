@@ -47,6 +47,10 @@ public class PropertiesReader {
         return res;
     }
     
+    public boolean getBoolean(String key) {
+        return Boolean.parseBoolean(getString(key));
+    }
+    
     public int getInteger(String key) {
         return Integer.parseInt(getString(key));
     }

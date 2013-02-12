@@ -49,13 +49,13 @@ public class KNN {
         TreeMap<Float, DataFileReader.Gesture> gestureDistances = Maps.newTreeMap();
         for (DataFileReader.Gesture g : gestureTemplates.values()) {
             //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
-            final float dist = DTW.allAxisEuclidean(
-                    MathUtils.medianFilter(windowAccel, 10), 
-                    MathUtils.medianFilter(g.accel, 10));
-            //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
-            /*final float dist = DTW.allAxisDTW(
+            /*final float dist = DTW.allAxisEuclidean(
                     MathUtils.medianFilter(windowAccel, 10), 
                     MathUtils.medianFilter(g.accel, 10));*/
+            //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
+            final float dist = DTW.allAxisDTW(
+                    MathUtils.medianFilter(windowAccel, 10), 
+                    MathUtils.medianFilter(g.accel, 10));
             gestureDistances.put(dist, g);
         }
         
