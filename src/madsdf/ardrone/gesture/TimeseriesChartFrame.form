@@ -42,7 +42,7 @@
   <SubComponents>
     <Container class="javax.swing.JPanel" name="chartPanel">
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new ChartPanel(null);"/>
+        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new TimeseriesChartPanel(title, xAxisLabel, yAxisLabel, seriesIDToName)"/>
       </AuxValues>
 
       <Layout>

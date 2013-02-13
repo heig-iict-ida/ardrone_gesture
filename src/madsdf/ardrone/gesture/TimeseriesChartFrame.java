@@ -23,59 +23,29 @@ import org.jfree.data.time.TimeSeriesCollection;
  * @author julien
  */
 public class TimeseriesChartFrame extends javax.swing.JFrame {
-    private Map<Integer, TimeSeries> series;
-    private JFreeChart chart;
-    
-    private final int NUM_VISIBLE = 100;
-    
-    private int counter = Integer.MIN_VALUE;
+    private final String title, xAxisLabel, yAxisLabel;
+    private final Map<Integer, String> seriesIDToName;
     /**
      * Creates new form DTWDistanceFrame
      */
     public TimeseriesChartFrame(String title,
                                 String xAxisLabel, String yAxisLabel,
                                 Map<Integer, String> seriesIDToName) {
+        // Those variables are used in initComponents()
+        this.title = title;
+        this.xAxisLabel = xAxisLabel;
+        this.yAxisLabel = yAxisLabel;
+        this.seriesIDToName = seriesIDToName;
+        
         initComponents();
         this.setTitle(title);
-        
-        series = Maps.newHashMap();
-        TimeSeriesCollection accelCol = new TimeSeriesCollection();
-        for (Entry<Integer, String> e : seriesIDToName.entrySet()) {
-            final TimeSeries s = new TimeSeries(e.getValue());
-            series.put(e.getKey(), s);
-            accelCol.addSeries(s);
-        }
-        
-        chart = ChartFactory.createTimeSeriesChart(
-                title,
-                xAxisLabel,
-                yAxisLabel,
-                accelCol,
-                true,
-                false,
-                false);
-        
-        XYPlot plot = chart.getXYPlot();
-        plot.setRangeGridlinesVisible(false);     // Hide the grid in the graph
-        plot.setDomainGridlinesVisible(false);
-        plot.setBackgroundPaint(Color.WHITE);
-        ValueAxis axisAcc = plot.getDomainAxis();
-        axisAcc.setTickMarksVisible(true);    // Define the tick count
-        axisAcc.setMinorTickCount(10);
-        axisAcc.setAutoRange(true);
-        axisAcc.setFixedAutoRange(NUM_VISIBLE);     // Define the number of visible value
-        axisAcc.setTickLabelsVisible(true);  // Hide the axis labels
-        
-        ChartPanel cPanel = (ChartPanel)chartPanel;
-        cPanel.setChart(chart);
     }
     
     public void addToChart(Map<Integer, Float> data) {
-        for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue());
-        }
-        counter++;
+        TimeseriesChartPanel pan = (TimeseriesChartPanel)chartPanel;
+        pan.addToChart(data);
     }
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -86,7 +56,7 @@ public class TimeseriesChartFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        chartPanel = new ChartPanel(null);
+        chartPanel = new TimeseriesChartPanel(title, xAxisLabel, yAxisLabel, seriesIDToName);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 

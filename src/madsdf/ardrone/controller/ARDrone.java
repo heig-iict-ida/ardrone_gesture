@@ -24,6 +24,7 @@ import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import madsdf.shimmer.event.Globals;
+import org.jfree.chart.ChartPanel;
 
 /**
  * ########### Gesture Command of a Quadricopter ###########

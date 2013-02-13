@@ -224,7 +224,7 @@ public class DTWGestureController extends DroneController {
             }
         }*/
         
-        if (stddev > 2000) {
+        if (stddev > /*2000*/25) {
             List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final int bestClass = l.get(0).getKey();
             //System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
@@ -233,13 +233,18 @@ public class DTWGestureController extends DroneController {
             if (knn.getNeighborClass(0) == bestClass) {
                 // Check that nearest neighbor dist is below threshold
                 //System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < 10000) {
+                if (knn.getNeighborDist(0) < /*10000*/125) {
                     detections.put(bestClass, 1.0f);
                 }
             }
         }
         
         detectedFrame.addToChart(detections);
+    }
+    
+    private void sendToDrone(Map<Integer, Float> detections) {
+        // TODO:
+        //this.updateDroneAction(ActionCommand.LAND, calibrated);
     }
     
     private void onSample(AccelGyro.Sample sample) {
