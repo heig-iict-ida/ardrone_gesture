@@ -24,16 +24,18 @@ public class TimeseriesChartPanel extends ChartPanel {
     private Map<Integer, TimeSeries> series;
     private JFreeChart chart;
     
-    private final int NUM_VISIBLE = 100;
-    
     private int counter = Integer.MIN_VALUE;
     
-    /**
-     * Creates new form TimeseriesChartPanel
-     */
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
                                 Map<Integer, String> seriesIDToName) {
+        this(title, xAxisLabel, yAxisLabel, seriesIDToName, 100);
+    }
+    
+    public TimeseriesChartPanel(String title,
+                                String xAxisLabel, String yAxisLabel,
+                                Map<Integer, String> seriesIDToName,
+                                long numVisible) {
         super(null);
         initComponents();
         
@@ -62,18 +64,34 @@ public class TimeseriesChartPanel extends ChartPanel {
         axisAcc.setTickMarksVisible(true);    // Define the tick count
         axisAcc.setMinorTickCount(10);
         axisAcc.setAutoRange(true);
-        axisAcc.setFixedAutoRange(NUM_VISIBLE);     // Define the number of visible value
+        axisAcc.setFixedAutoRange(numVisible);     // Define the number of visible value
         axisAcc.setTickLabelsVisible(true);  // Hide the axis labels
         
         this.setChart(chart);
     }
     
+    // There are different way to update the chart. Note that you should
+    // probably stick to ONE addToChart method. Mixing them might result in
+    // undefined behaviour (due to the counter variable)
         
+    // Add a set of values to the chart. One value for each serie
     public void addToChart(Map<Integer, Float> data) {
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
             series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue());
         }
         counter++;
+    }
+    
+    // Add a set of values to the chart. One value for each serie
+    public void addToChart(long timestampMS, Map<Integer, Float> data) {
+        for (Map.Entry<Integer, Float> e : data.entrySet()) {
+            series.get(e.getKey()).add(new FixedMillisecond(timestampMS), e.getValue());
+        }
+    }
+    
+    // Add a unique value with a specific timestamp to the cart
+    public void addToChart(long timestampMS, int serieID, Float value) {
+        series.get(serieID).add(new FixedMillisecond(timestampMS), value);
     }
 
     /**

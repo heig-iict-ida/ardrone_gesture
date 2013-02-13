@@ -21,8 +21,17 @@ import madsdf.ardrone.gesture.Features;
 import madsdf.ardrone.gesture.MovementModel;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.BoxLayout;
+import javax.swing.JPanel;
+import madsdf.ardrone.gesture.TimeseriesChartPanel;
 import madsdf.shimmer.event.Globals;
 import org.jfree.chart.ChartPanel;
 
@@ -103,17 +112,7 @@ public class ARDrone extends JFrame implements Runnable {
     // Drone state
     private FlyingState droneState = FlyingState.LANDED;
     // Boolean action map
-    private boolean actionTop = false;
-    private boolean actionDown = false;
-    private boolean actionForward = false;
-    private boolean actionBackward = false;
-    private boolean actionLeft = false;
-    private boolean actionRight = false;
-    private boolean actionRotateLeft = false;
-    private boolean actionRotateRight = false;
-    private boolean actionHovering = false;
-    private boolean actionTakeOff = false;
-    private boolean actionLanding = false;
+    private Map<ActionCommand, Boolean> commandState = Maps.newHashMap();
     // Program state
     private boolean exit = false;
     private boolean navDataBootStrap = false;
@@ -126,6 +125,7 @@ public class ARDrone extends JFrame implements Runnable {
     // The battery progress bar
     JProgressBar batteryLevel;
     JTextArea logArea;
+    TimeseriesChartPanel commandPanel;
     // The properties objects
     private Properties configDrone;
     private final String leftShimmerID;
@@ -190,16 +190,52 @@ public class ARDrone extends JFrame implements Runnable {
         } catch (UnknownHostException ex) {
             System.err.println("ARDrone.main : " + ex);
         }
+        
+        // Initialize commandState
+        for (ActionCommand a : ActionCommand.values()) {
+            commandState.put(a, false);
+        }
 
         // Set the title and create the video panel
         this.setTitle("ARDrone gesture control");
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("parrot_icon.png")));
         videoPanel = new VideoPanel();
+        
+        JPanel southPanel = new JPanel();
+        southPanel.setLayout(new GridLayout(1, 2));
+        this.getContentPane().add(southPanel, BorderLayout.SOUTH);
 
         logArea = new JTextArea();
-        this.getContentPane().add(logArea, BorderLayout.SOUTH);
-        logArea.setPreferredSize(new Dimension(0, 200));
+        logArea.setPreferredSize(new Dimension(0, 300));
         logArea.setEnabled(false);
+        southPanel.add(logArea);
+        
+        
+        Map<Integer, String> commandIDToName = Maps.newHashMap();
+        for (ActionCommand a: ActionCommand.values()) {
+            commandIDToName.put(a.ordinal(), a.name());
+        }
+        commandPanel = new TimeseriesChartPanel("Drone commands",
+                "Time (samples)", "Activation", commandIDToName, 10000);
+        commandPanel.setPreferredSize(new Dimension(0, 300));
+        southPanel.add(commandPanel);
+        
+        new Thread(){
+            @Override
+            public void run() {
+                while (true) {
+                    final Map<Integer, Float> data = Maps.newHashMap();
+                    for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
+                        final float v = e.getValue() ? 1 : 0;
+                        data.put(e.getKey().ordinal(), v);
+                    }
+                    commandPanel.addToChart(System.currentTimeMillis(), data);
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException ex) {}
+                }
+            }
+        }.start();
 
         // Discover the bluetooth devices if needed
       /*if(configSensors != null && configSensors.length > 0)
@@ -504,10 +540,9 @@ public class ARDrone extends JFrame implements Runnable {
      * Make the drone take off if the condition are filled
      */
     public void takeOff() {
-
         // If the drone is already flying cancel the command
         if (getFlyingState() == FlyingState.FLYING || getFlyingState() == FlyingState.LANDING || navDataBootStrap || emergency) {
-            actionTakeOff = false;
+            commandState.put(ActionCommand.TAKEOFF, false);
 
             // If the drone is in emergency state, reset the flag
             if (emergency) {
@@ -527,7 +562,7 @@ public class ARDrone extends JFrame implements Runnable {
     public void land() {
         // If the drone is already landed cancel the status
         if (getFlyingState() == FlyingState.LANDED) {
-            actionLanding = false;
+            commandState.put(ActionCommand.LAND, false);
         }
 
         // But keep sending the command, we never know...
@@ -552,9 +587,9 @@ public class ARDrone extends JFrame implements Runnable {
      * @param startAction true to send the command and false to stop sending the
      * command
      */
-    public void updateActionMap(ActionCommand command, boolean startAction) {
+    public void updateActionMap(ActionCommand command, boolean startAction) {        
+        // process command
         switch (command) {
-            // Speed control
             case SPEED:
                 switch (command.getVal()) {
                     case 1:
@@ -597,56 +632,19 @@ public class ARDrone extends JFrame implements Runnable {
 
             // Go up (gas+)
             case GOTOP:
-                //System.out.println("Go Up (gas+) " + startAction);
-                actionTop = startAction;
-                break;
-
-            // Go down (gas-)
             case GODOWN:
-                //System.out.println("Go Down (gas-) " + startAction);
-                actionDown = startAction;
-                break;
-
-            // Rotate on the right (yaw+)
             case ROTATERIGHT:
-//            System.out.println("Rotate Right (yaw+) " + startAction);
-                actionRotateRight = startAction;
-                break;
-
-            // Rotate on the left (yaw-)
             case ROTATELEFT:
-//            System.out.println("Rotate Left (yaw-) " + startAction);
-                actionRotateLeft = startAction;
-                break;
-
-            // Go forward (pitch+)
             case GOFORWARD:
-//            System.out.println("Go Forward (pitch+) " + startAction);
-                actionForward = startAction;
-                break;
-
-            // Go backward (pitch-)
             case GOBACKWARD:
-//            System.out.println("Go Backward (pitch-) " + startAction);
-                actionBackward = startAction;
-                break;
-
-            // Move to the right (roll+)
             case GORIGHT:
-//            System.out.println("Go Right (roll+) " + startAction);
-                actionRight = startAction;
-                break;
-
-            // Move to the left (roll-)
             case GOLEFT:
-//            System.out.println("Go Left (roll-) " + startAction);
-                actionLeft = startAction;
+                commandState.put(command, startAction);
                 break;
-
             // Try to take off
             case TAKEOFF:
                 if (startAction) {
-                    actionTakeOff = true;
+                    commandState.put(command, true);
                     takeOff();
                 }
                 break;
@@ -654,8 +652,8 @@ public class ARDrone extends JFrame implements Runnable {
             // Land
             case LAND:
                 if (startAction) {
-                    actionLanding = true;
-                    actionTakeOff = false;
+                    commandState.put(ActionCommand.LAND, true);
+                    commandState.put(ActionCommand.TAKEOFF, true);
                     land();
                 }
                 break;
@@ -663,7 +661,7 @@ public class ARDrone extends JFrame implements Runnable {
             // Force the drone to hover
             case HOVER:
 //            System.out.println("Hovering");
-                actionHovering = startAction;
+                commandState.put(ActionCommand.HOVER, startAction);
                 sendPCMD(0, 0, 0, 0, 0);
                 break;
 
@@ -675,17 +673,9 @@ public class ARDrone extends JFrame implements Runnable {
 
     private void updateLog() {
         String status = "";
-        status += "top : " + actionTop + "\n";
-        status += "down : " + actionDown + "\n";
-        status += "forward : " + actionForward + "\n";
-        status += "backward : " + actionBackward + "\n";
-        status += "left : " + actionLeft + "\n";
-        status += "right : " + actionRight + "\n";
-        status += "rotateLeft : " + actionRotateLeft + "\n";
-        status += "rotateRight : " + actionRotateRight + "\n";
-        status += "hovering : " + actionHovering + "\n";
-        status += "takeoff : " + actionTakeOff + "\n";
-        status += "landing : " + actionLanding + "\n";
+        for (ActionCommand cmd : ActionCommand.values()) {
+            status += cmd.name() + " : " + commandState.get(cmd) + "\n";
+        }
         logArea.setText(status);
     }
 
@@ -764,76 +754,76 @@ public class ARDrone extends JFrame implements Runnable {
      * @return the take off action value
      */
     public boolean isActionTakeOff() {
-        return actionTakeOff;
+        return commandState.get(ActionCommand.TAKEOFF);
     }
 
     /**
      * @return the landing action value
      */
     public boolean isActionLanding() {
-        return actionLanding;
+        return commandState.get(ActionCommand.LAND);
     }
 
     /**
      * @return the top action value
      */
     public boolean isActionTop() {
-        return actionTop;
+        return commandState.get(ActionCommand.GOTOP);
     }
 
     /**
      * @return the down action value
      */
     public boolean isActionDown() {
-        return actionDown;
+        return commandState.get(ActionCommand.GODOWN);
     }
 
     /**
      * @return the forward action value
      */
     public boolean isActionForward() {
-        return actionForward;
+        return commandState.get(ActionCommand.GOFORWARD);
     }
 
     /**
      * @return the backward action value
      */
     public boolean isActionBackward() {
-        return actionBackward;
+        return commandState.get(ActionCommand.GOBACKWARD);
     }
 
     /**
      * @return the left action value
      */
     public boolean isActionLeft() {
-        return actionLeft;
+        return commandState.get(ActionCommand.GOLEFT);
     }
 
     /**
      * @return the right action value
      */
     public boolean isActionRight() {
-        return actionRight;
+         return commandState.get(ActionCommand.GORIGHT);
     }
 
     /**
      * @return the rotate left action value
      */
     public boolean isActionRotateLeft() {
-        return actionRotateLeft;
+         return commandState.get(ActionCommand.ROTATELEFT);
     }
 
     /**
      * @return the rotate right action value
      */
     public boolean isActionRotateRight() {
-        return actionRotateRight;
+        return commandState.get(ActionCommand.ROTATERIGHT);
     }
 
     /**
      * @return the hovering action value
      */
     public boolean isActionHovering() {
-        return actionHovering;
+         return commandState.get(ActionCommand.HOVER);
     }
 }
