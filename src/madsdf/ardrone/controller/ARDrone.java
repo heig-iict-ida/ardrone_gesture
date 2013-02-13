@@ -587,7 +587,15 @@ public class ARDrone extends JFrame implements Runnable {
      * @param startAction true to send the command and false to stop sending the
      * command
      */
-    public void updateActionMap(ActionCommand command, boolean startAction) {        
+    public void updateActionMap(ActionCommand command, boolean startAction) {
+        // Add this single action to chart so we are sure the chart updating
+        // thread doesn't miss it
+        /*final float v = startAction ? 1 : 0;
+        commandPanel.addToChart(System.currentTimeMillis(), command.ordinal(), v);*/
+        
+        // TODO: We should do the same with ControlSender (make sure it doesn't
+        // miss too short commands)
+         
         // process command
         switch (command) {
             case SPEED:

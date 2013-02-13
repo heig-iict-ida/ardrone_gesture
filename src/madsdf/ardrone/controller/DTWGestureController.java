@@ -53,9 +53,10 @@ public class DTWGestureController extends DroneController {
         boolean calibrated = descReader.getBoolean("calibrated");
         // MovementsMap : convert from <String, String> to <Integer, String>
         Map<String, String> _movementsMap = descReader.getMap("movements_map");
-        Map<Integer, String> movementsMap = Maps.newHashMap();
+        Map<Integer, ActionCommand> movementsMap = Maps.newHashMap();
         for (Entry<String, String> e : _movementsMap.entrySet()) {
-            movementsMap.put(Integer.parseInt(e.getKey()), e.getValue());
+            final ActionCommand a = ActionCommand.valueOf(e.getValue());
+            movementsMap.put(Integer.parseInt(e.getKey()), a);
         }
         
         final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
@@ -79,11 +80,11 @@ public class DTWGestureController extends DroneController {
     
     private final boolean calibrated;
     
-    private final Map<Integer, String> movementsMap;
+    private final Map<Integer, ActionCommand> movementsMap;
     
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<Gesture> gestures,
-                                final Map<Integer, String> movementsMap,
+                                final Map<Integer, ActionCommand> movementsMap,
                                 boolean calibrated) {
         super(actionMask, drone);
         this.calibrated = calibrated;
@@ -105,14 +106,18 @@ public class DTWGestureController extends DroneController {
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
+                Map<Integer, String> movementsNames = Maps.newHashMap();
+                for (Entry<Integer, ActionCommand> e : movementsMap.entrySet()) {
+                    movementsNames.put(e.getKey(), e.getValue().name());
+                }
                 DTWGestureController.this.distFrame = new TimeseriesChartFrame(
                         "Distance to gesture templates",
-                        "Windows", "DTW distance", movementsMap);
+                        "Windows", "DTW distance", movementsNames);
                 DTWGestureController.this.distFrame.setVisible(true);
                 
                 DTWGestureController.this.knnFrame = new TimeseriesChartFrame(
                         "KNN votes",
-                        "Windows", "votes", movementsMap);
+                        "Windows", "votes", movementsNames);
                 DTWGestureController.this.knnFrame.setVisible(true);
                 DTWGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
@@ -121,7 +126,7 @@ public class DTWGestureController extends DroneController {
                 
                 DTWGestureController.this.detectedFrame = new TimeseriesChartFrame(
                         "Detected gestures",
-                        "Windows", "Detected", movementsMap);
+                        "Windows", "Detected", movementsNames);
                 DTWGestureController.this.detectedFrame.setVisible(true);
             }
         });
@@ -240,11 +245,15 @@ public class DTWGestureController extends DroneController {
         }
         
         detectedFrame.addToChart(detections);
+        sendToDrone(detections);
     }
     
     private void sendToDrone(Map<Integer, Float> detections) {
-        // TODO:
-        //this.updateDroneAction(ActionCommand.LAND, calibrated);
+        for (Entry<Integer, Float> e : detections.entrySet()) {
+            final ActionCommand a = ActionCommand.values()[e.getKey()];
+            final boolean v = e.getValue() > 0;
+            this.updateDroneAction(a, v);
+        }
     }
     
     private void onSample(AccelGyro.Sample sample) {
