@@ -57,12 +57,12 @@ public class MeanDifferenceMedianMinMovement extends MovementModel {
       for(int i = 0; i < NB_LINES; i++){
          
          // Copy the sample
-         sampleCopy[i].add((float)sample.getVal(i+1));
+         sampleCopy[i].add((float)getVal(sample, i+1));
          
          // Initialize the mean, min and max
-         features[NB_FEATURES * i] = sample.getVal(i+1);
-         features[3+NB_FEATURES * i] = sample.getVal(i+1);
-         maxValue[i] = sample.getVal(i+1);
+         features[NB_FEATURES * i] = getVal(sample, i+1);
+         features[3+NB_FEATURES * i] = getVal(sample, i+1);
+         maxValue[i] = getVal(sample, i+1);
       }
       
       // For each sample
@@ -72,16 +72,16 @@ public class MeanDifferenceMedianMinMovement extends MovementModel {
          for(int i = 0; i < NB_LINES; i++){
             
             // Copy
-            sampleCopy[i].add((float)sample.getVal(i+1));
+            sampleCopy[i].add((float)getVal(sample, i+1));
             
             // Mean
-            features[NB_FEATURES * i] += sample.getVal(i+1);
+            features[NB_FEATURES * i] += getVal(sample, i+1);
             
             // Min
-            features[3+NB_FEATURES * i] = Math.min(sample.getVal(i+1), features[3+NB_FEATURES * i]);
+            features[3+NB_FEATURES * i] = Math.min(getVal(sample, i+1), features[3+NB_FEATURES * i]);
             
             // Max
-            maxValue[i] = Math.max(sample.getVal(i+1), maxValue[i]);
+            maxValue[i] = Math.max(getVal(sample, i+1), maxValue[i]);
          }
       }
       

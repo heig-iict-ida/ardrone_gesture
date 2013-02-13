@@ -57,9 +57,9 @@ public class MeanMinMaxMovement extends MovementModel {
         // For each value of the first AccelGyroSample, initialise the features
         for (int i = 0; i < NB_LINES; i++) {
             // Initialize the mean, min, max 
-            features[NB_FEATURES * i] = sample.getVal(i + 1);
-            features[1 + NB_FEATURES * i] = sample.getVal(i + 1);
-            features[2 + NB_FEATURES * i] = sample.getVal(i + 1);
+            features[NB_FEATURES * i] = getVal(sample, i + 1);
+            features[1 + NB_FEATURES * i] = getVal(sample, i + 1);
+            features[2 + NB_FEATURES * i] = getVal(sample, i + 1);
         }
 
         // For each sample
@@ -71,13 +71,13 @@ public class MeanMinMaxMovement extends MovementModel {
             for (int i = 0; i < NB_LINES; i++) {
 
                 // Mean
-                features[NB_FEATURES * i] += sample.getVal(i + 1);
+                features[NB_FEATURES * i] += getVal(sample, i + 1);
 
                 // Min
-                features[1 + NB_FEATURES * i] = Math.min(sample.getVal(i + 1), features[1 + NB_FEATURES * i]);
+                features[1 + NB_FEATURES * i] = Math.min(getVal(sample, i + 1), features[1 + NB_FEATURES * i]);
 
                 // Max
-                features[2 + NB_FEATURES * i] = Math.max(sample.getVal(i + 1), features[2 + NB_FEATURES * i]);
+                features[2 + NB_FEATURES * i] = Math.max(getVal(sample, i + 1), features[2 + NB_FEATURES * i]);
             }
         }
 

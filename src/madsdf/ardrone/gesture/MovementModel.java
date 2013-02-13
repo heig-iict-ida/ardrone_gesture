@@ -35,6 +35,22 @@ public abstract class MovementModel {
             System.arraycopy(f, 0, data, 0, f.length);
         }
     }
+    
+    // Wrapper for neural network feature extraction based on old AccelGyro
+    // sample
+    // TODO: Remove : this is only for backward-compatibility
+    public static float getVal(AccelGyro.Sample sample, int i) {
+        if (i < 1 || i > 6) {
+            throw new IllegalArgumentException("Invaild i : " + i);
+        }
+        if (i <= 3) {
+            return sample.accel[i - 1];
+        } else {
+            return sample.gyro[i - 4];
+        }
+
+    }
+    
     // The defaults values
     public static final int DEFAULT_WINDOWSIZE = 20;
     public static final int DEFAULT_MOVEMENTSIZE = 100;

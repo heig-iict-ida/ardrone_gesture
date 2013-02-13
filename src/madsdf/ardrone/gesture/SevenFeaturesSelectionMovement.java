@@ -85,12 +85,12 @@ public class SevenFeaturesSelectionMovement extends MovementModel {
       for(int i = 0; i < NB_LINES; i++){
          
          // Copy the sample
-         sampleCopy[i].add((float)sample.getVal(i+1));
+         sampleCopy[i].add((float)getVal(sample, i+1));
          
          // Initialize the max, min, mean and variance
-         calcFeatures[NB_FEATURES * i] = sample.getVal(i+1);
-         calcFeatures[1+NB_FEATURES * i] = sample.getVal(i+1);
-         calcFeatures[4+NB_FEATURES * i] = sample.getVal(i+1);
+         calcFeatures[NB_FEATURES * i] = getVal(sample, i+1);
+         calcFeatures[1+NB_FEATURES * i] = getVal(sample, i+1);
+         calcFeatures[4+NB_FEATURES * i] = getVal(sample, i+1);
          calcFeatures[5+NB_FEATURES * i] = 0;
       }
       
@@ -102,16 +102,16 @@ public class SevenFeaturesSelectionMovement extends MovementModel {
          for(int i = 0; i < NB_LINES; i++){
             
             // Copy
-            sampleCopy[i].add((float)sample.getVal(i+1));
+            sampleCopy[i].add((float)getVal(sample, i+1));
             
             // Max
-            calcFeatures[NB_FEATURES * i] = Math.max(sample.getVal(i+1), calcFeatures[NB_FEATURES * i]);
+            calcFeatures[NB_FEATURES * i] = Math.max(getVal(sample, i+1), calcFeatures[NB_FEATURES * i]);
             
             // Min
-            calcFeatures[1+NB_FEATURES * i] = Math.min(sample.getVal(i+1), calcFeatures[1+NB_FEATURES * i]);
+            calcFeatures[1+NB_FEATURES * i] = Math.min(getVal(sample, i+1), calcFeatures[1+NB_FEATURES * i]);
             
             // Mean
-            calcFeatures[4+NB_FEATURES * i] += sample.getVal(i+1);
+            calcFeatures[4+NB_FEATURES * i] += getVal(sample, i+1);
          }
       }
       
