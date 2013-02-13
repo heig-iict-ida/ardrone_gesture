@@ -37,6 +37,7 @@ public class DataFileReader {
         public final int sample;
         public final float[][] accel;
         public final float[][] gyro;
+        
         public Gesture(int cmd, int sam, float[][] accel, float[][] gyro) {
             this.command = cmd;
             this.sample = sam;

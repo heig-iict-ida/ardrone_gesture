@@ -14,6 +14,8 @@ import com.google.common.collect.Ordering;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import madsdf.ardrone.controller.ActionCommand;
+import madsdf.ardrone.controller.DTWGestureController.GestureTemplate;
 import madsdf.ardrone.gesture.DTW;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
 
@@ -38,10 +40,10 @@ public class KNN {
     }
     
     public static KNN classify(int k, float[][] windowAccel,
-            Multimap<Integer, DataFileReader.Gesture> gestureTemplates) {
+            Multimap<ActionCommand, GestureTemplate> gestureTemplates) {
                // Contains (distance, gesture)
-        TreeMap<Float, DataFileReader.Gesture> gestureDistances = Maps.newTreeMap();
-        for (DataFileReader.Gesture g : gestureTemplates.values()) {
+        TreeMap<Float, GestureTemplate> gestureDistances = Maps.newTreeMap();
+        for (GestureTemplate g : gestureTemplates.values()) {
             //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
             /*final float dist = DTW.allAxisEuclidean(
                     MathUtils.medianFilter(windowAccel, 10), 
@@ -49,11 +51,11 @@ public class KNN {
             //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
             final float dist = DTW.allAxisDTW(
                     MathUtils.medianFilter(windowAccel, 10), 
-                    MathUtils.medianFilter(g.accel, 10));
+                    MathUtils.medianFilter(g.gesture.accel, 10));
             gestureDistances.put(dist, g);
         }
         
-        FluentIterable<Entry<Float, Gesture>> closest = FluentIterable
+        FluentIterable<Entry<Float, GestureTemplate>> closest = FluentIterable
                 .from(gestureDistances.entrySet())
                 .limit(k);
         
@@ -62,54 +64,54 @@ public class KNN {
     
     // Return a copy of 'source' where, when iterating using entrySet, the
     // entries will be sorted by the VALUE of the entry
-    private static ImmutableMap<Integer, Float> valueSortedMap(
-            Map<Integer, Float> source) {
+    private static ImmutableMap<ActionCommand, Float> valueSortedMap(
+            Map<ActionCommand, Float> source) {
         // Ordering that sort Entry<Integer, Float> by decreasing e.value
-        Ordering<Entry<Integer, Float>> entryOrdering = Ordering.natural()
-                .onResultOf(new Function<Entry<Integer, Float>, Float>() {
+        Ordering<Entry<ActionCommand, Float>> entryOrdering = Ordering.natural()
+                .onResultOf(new Function<Entry<ActionCommand, Float>, Float>() {
                     @Override
-                    public Float apply(Entry<Integer, Float> e) {
+                    public Float apply(Entry<ActionCommand, Float> e) {
                        return e.getValue();
                     }
                 }).reverse();
         // ImmutableMap guarantee that the iteration order over entrySet is
         // the same as the order used to construct the map
-        ImmutableMap.Builder<Integer, Float> builder = ImmutableMap.builder();
-        for (Entry<Integer, Float> e : entryOrdering.sortedCopy(source.entrySet())) {
+        ImmutableMap.Builder<ActionCommand, Float> builder = ImmutableMap.builder();
+        for (Entry<ActionCommand, Float> e : entryOrdering.sortedCopy(source.entrySet())) {
             builder.put(e.getKey(), e.getValue());
         }
         return builder.build();
     }
     
-    public final ImmutableList<Entry<Float, Gesture>> nearest;
+    public final ImmutableList<Entry<Float, GestureTemplate>> nearest;
     // For each class, contains the number of nearest neighbors of this class
     // The iteration order over this map is fixed and in decreasing order of
     // class popularity
-    public final ImmutableMap<Integer, Float> votesPerClass;
-    public final ImmutableMap<Integer, Float> distPerClass;
+    public final ImmutableMap<ActionCommand, Float> votesPerClass;
+    public final ImmutableMap<ActionCommand, Float> distPerClass;
     
-    private KNN(Iterable<Integer> allClasses,
-                Iterable<Entry<Float, Gesture>> closest) {
+    private KNN(Iterable<ActionCommand> allClasses,
+                Iterable<Entry<Float, GestureTemplate>> closest) {
         this.nearest = ImmutableList.copyOf(closest);
         
         // Compute votes per class and average distance to class
-        Map<Integer, Float> _votesPerClass = Maps.newHashMap();
+        Map<ActionCommand, Float> _votesPerClass = Maps.newHashMap();
         zeroInit(_votesPerClass, allClasses);
         // Note that we only compute dist per class for classes that have at
         // least one instance in the nearest neighbors. Classes that aren't
         // represented should be considered with a distance of infinity
-        Map<Integer, Float> _distPerClass = Maps.newHashMap();
+        Map<ActionCommand, Float> _distPerClass = Maps.newHashMap();
         
-        for (Entry<Float, Gesture> e: closest) {
+        for (Entry<Float, GestureTemplate> e: closest) {
             final float dist = e.getKey();
-            final Gesture g = e.getValue();
+            final GestureTemplate g = e.getValue();
             mapIncr(_votesPerClass, g.command, 1);
             mapIncr(_distPerClass, g.command, dist);
         }
         
         // Average dist
-        for (Entry<Integer, Float> e: _distPerClass.entrySet()) {
-            final int cmd = e.getKey();
+        for (Entry<ActionCommand, Float> e: _distPerClass.entrySet()) {
+            final ActionCommand cmd = e.getKey();
             _distPerClass.put(cmd, e.getValue() / (float) _votesPerClass.get(cmd));
         }
         
@@ -121,7 +123,7 @@ public class KNN {
         return nearest.get(neighbor).getKey();
     }
     
-    public int getNeighborClass(int neighbor) {
+    public ActionCommand getNeighborClass(int neighbor) {
         return nearest.get(neighbor).getValue().command;
     }
     

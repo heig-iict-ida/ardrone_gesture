@@ -5,6 +5,7 @@
 package madsdf.ardrone.gesture;
 
 import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.awt.Color;
 import java.util.Map;
@@ -24,13 +25,13 @@ import org.jfree.data.time.TimeSeriesCollection;
  */
 public class TimeseriesChartFrame extends javax.swing.JFrame {
     private final String title, xAxisLabel, yAxisLabel;
-    private final Map<Integer, String> seriesIDToName;
+    private final ImmutableMap<Integer, String> seriesIDToName;
     /**
      * Creates new form DTWDistanceFrame
      */
     public TimeseriesChartFrame(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                Map<Integer, String> seriesIDToName) {
+                                ImmutableMap<Integer, String> seriesIDToName) {
         // Those variables are used in initComponents()
         this.title = title;
         this.xAxisLabel = xAxisLabel;

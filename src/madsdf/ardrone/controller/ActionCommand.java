@@ -1,5 +1,6 @@
 package madsdf.ardrone.controller;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -33,6 +34,17 @@ public enum ActionCommand
                .add(ActionCommand.values())
                .build();
    }
+   
+   // Map ActionCommand.ordinal() to ActionCommand.name()
+   public static final ImmutableMap<Integer, String> ordinalToName;
+   static {
+       ImmutableMap.Builder<Integer, String> b = ImmutableMap.builder();
+       for (ActionCommand a : ActionCommand.values()) {
+           b.put(a.ordinal(), a.name());
+       }
+       ordinalToName = b.build();
+   }
+
 
    /**
     * Allow to add an integer value to the constant, useful for the speed

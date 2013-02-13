@@ -40,6 +40,15 @@ import madsdf.ardrone.utils.KNN;
  * Controller based on matching incoming measurements with gesture templates
  */
 public class DTWGestureController extends DroneController {
+    public static class GestureTemplate {
+        public final ActionCommand command;
+        public final Gesture gesture;
+        public GestureTemplate(ActionCommand cmd, Gesture g) {
+            this.command = cmd;
+            this.gesture = g;
+        }
+    }
+    
     public static DTWGestureController FromProperties(
             ImmutableSet<ActionCommand> actionMask, ARDrone drone,
             EventBus ebus, String configSensor) throws FileNotFoundException, IOException {
@@ -60,14 +69,19 @@ public class DTWGestureController extends DroneController {
         }
         
         final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
-        List<Gesture> templates = freader.readAll();
+        List<Gesture> gestures = freader.readAll();
+        List<GestureTemplate> templates = Lists.newArrayList(); 
+        for (Gesture g : gestures) {
+            final ActionCommand cmd = movementsMap.get(g.command);
+            templates.add(new GestureTemplate(cmd, g));
+        }
          
-        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, movementsMap, calibrated);
+        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, calibrated);
         ebus.register(ctrl);
         return ctrl;
     }
     
-    private Multimap<Integer, Gesture> gestureTemplates = ArrayListMultimap.create();
+    private Multimap<ActionCommand, GestureTemplate> gestureTemplates = ArrayListMultimap.create();
     private WindowAccumulator accumulator =
             new WindowAccumulator<AccelGyro.Sample>(150, 15);
     
@@ -80,25 +94,18 @@ public class DTWGestureController extends DroneController {
     
     private final boolean calibrated;
     
-    private final Map<Integer, ActionCommand> movementsMap;
-    
     public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
-                                ARDrone drone, List<Gesture> gestures,
-                                final Map<Integer, ActionCommand> movementsMap,
+                                ARDrone drone, List<GestureTemplate> templates,
                                 boolean calibrated) {
         super(actionMask, drone);
         this.calibrated = calibrated;
-        this.movementsMap = movementsMap;
-        for (Gesture g: gestures) {
+        
+        for (GestureTemplate g: templates) {
             gestureTemplates.put(g.command, g);
-            // Consistency check
-            checkState(movementsMap.containsKey(g.command),
-                       "movementsMap must contain mapping for command %d",
-                       g.command);
         }
         
         System.out.println("-- DTW Gesture Controller, number of templates per command");
-        for (Integer command : gestureTemplates.keySet()) {
+        for (ActionCommand command : gestureTemplates.keySet()) {
             System.out.println("command : " + command + " : " +
                     gestureTemplates.get(command).size());
         }
@@ -106,18 +113,19 @@ public class DTWGestureController extends DroneController {
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                Map<Integer, String> movementsNames = Maps.newHashMap();
-                for (Entry<Integer, ActionCommand> e : movementsMap.entrySet()) {
-                    movementsNames.put(e.getKey(), e.getValue().name());
+                ImmutableMap.Builder<Integer, String> b = ImmutableMap.builder();
+                for (ActionCommand a : gestureTemplates.keySet()) {
+                    b.put(a.ordinal(), a.name());
                 }
+                ImmutableMap<Integer, String> commandIDToName = b.build();
                 DTWGestureController.this.distFrame = new TimeseriesChartFrame(
                         "Distance to gesture templates",
-                        "Windows", "DTW distance", movementsNames);
+                        "Windows", "DTW distance", commandIDToName);
                 DTWGestureController.this.distFrame.setVisible(true);
                 
                 DTWGestureController.this.knnFrame = new TimeseriesChartFrame(
                         "KNN votes",
-                        "Windows", "votes", movementsNames);
+                        "Windows", "votes", commandIDToName);
                 DTWGestureController.this.knnFrame.setVisible(true);
                 DTWGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
@@ -126,7 +134,7 @@ public class DTWGestureController extends DroneController {
                 
                 DTWGestureController.this.detectedFrame = new TimeseriesChartFrame(
                         "Detected gestures",
-                        "Windows", "Detected", movementsNames);
+                        "Windows", "Detected", commandIDToName);
                 DTWGestureController.this.detectedFrame.setVisible(true);
             }
         });
@@ -167,42 +175,60 @@ public class DTWGestureController extends DroneController {
         return (float) Math.sqrt(stddev);
     }
     
+    public Map<Integer, Float> toIntegerMap(Map<ActionCommand, Float> m) {
+        Map<Integer, Float> outM = Maps.newHashMap();
+        for (Entry<ActionCommand, Float> e : m.entrySet()) {
+            outM.put(e.getKey().ordinal(), e.getValue());
+        }
+        return outM;
+    }
+    
     private void matchWindow(float[][] windowAccel) {
         Map<Integer, Float> cmdDists = Maps.newHashMap();
-        for (Integer command: gestureTemplates.keySet()) {
-            Collection<Gesture> templates = gestureTemplates.get(command);
+        for (ActionCommand command: gestureTemplates.keySet()) {
+            Collection<GestureTemplate> templates = gestureTemplates.get(command);
             
             ArrayList<Float> dists = Lists.newArrayList();
-            for (Gesture g: templates) {
+            for (GestureTemplate g: templates) {
                 //dists.add(DTW.allAxisDTW(windowAccel, g.accel));
-                dists.add(DTW.allAxisEuclidean(windowAccel, g.accel));
+                dists.add(DTW.allAxisEuclidean(windowAccel, g.gesture.accel));
             }
             
             final float dist = Collections.min(dists);
             //final float dist = average(dists);
-            cmdDists.put(command, dist);
+            cmdDists.put(command.ordinal(), dist);
         }
-        distFrame.addToChart(cmdDists);
+        updateChart(distFrame, cmdDists);
         
         KNN knn = KNN.classify(KNN_K, windowAccel, gestureTemplates);
         
         //System.out.println(_tmp);
-        knnFrame.addToChart(knn.votesPerClass);
+        updateChart(knnFrame, toIntegerMap(knn.votesPerClass));
         
         float meanStddev = (stddev(windowAccel[0]) + stddev(windowAccel[1])
                 + stddev(windowAccel[2])) / 3.0f;
         Map<Integer, Float> chartData = Maps.newHashMap();
         chartData.put(0, meanStddev);
-        stdDevFrame.addToChart(chartData);
+        updateChart(stdDevFrame, chartData);
         
         // Finally, decide if we detected something
         decideGesture(knn, meanStddev);
     }
     
+    private static void updateChart(final TimeseriesChartFrame panel,
+                                    final Map<Integer, Float> data) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                panel.addToChart(data);
+            }
+        });
+    }
+    
+    
     private void decideGesture(final KNN knn,
                                float stddev) {
-        Map<Integer, Float> detections = Maps.newHashMap();
-        for (Integer command: gestureTemplates.keySet()) {
+        Map<ActionCommand, Float> detections = Maps.newHashMap();
+        for (ActionCommand command: gestureTemplates.keySet()) {
             detections.put(command, 0.0f);
         }
         
@@ -230,8 +256,8 @@ public class DTWGestureController extends DroneController {
         }*/
         
         if (stddev > /*2000*/25) {
-            List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
-            final int bestClass = l.get(0).getKey();
+            List<Entry<ActionCommand, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
+            final ActionCommand bestClass = l.get(0).getKey();
             //System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
             
             // Check that nearest neighbor is of majority class
@@ -244,15 +270,14 @@ public class DTWGestureController extends DroneController {
             }
         }
         
-        detectedFrame.addToChart(detections);
+        updateChart(detectedFrame, toIntegerMap(detections));
         sendToDrone(detections);
     }
     
-    private void sendToDrone(Map<Integer, Float> detections) {
-        for (Entry<Integer, Float> e : detections.entrySet()) {
-            final ActionCommand a = ActionCommand.values()[e.getKey()];
+    private void sendToDrone(Map<ActionCommand, Float> detections) {
+        for (Entry<ActionCommand, Float> e : detections.entrySet()) {
             final boolean v = e.getValue() > 0;
-            this.updateDroneAction(a, v);
+            this.updateDroneAction(e.getKey(), v);
         }
     }
     

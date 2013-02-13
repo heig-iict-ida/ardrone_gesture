@@ -4,9 +4,11 @@
  */
 package madsdf.ardrone.gesture;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.awt.Color;
 import java.util.Map;
+import javax.swing.SwingUtilities;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,13 +30,13 @@ public class TimeseriesChartPanel extends ChartPanel {
     
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                Map<Integer, String> seriesIDToName) {
+                                ImmutableMap<Integer, String> seriesIDToName) {
         this(title, xAxisLabel, yAxisLabel, seriesIDToName, 100);
     }
     
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                Map<Integer, String> seriesIDToName,
+                                ImmutableMap<Integer, String> seriesIDToName,
                                 long numVisible) {
         super(null);
         initComponents();
@@ -77,7 +79,7 @@ public class TimeseriesChartPanel extends ChartPanel {
     // Add a set of values to the chart. One value for each serie
     public void addToChart(Map<Integer, Float> data) {
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue());
+            series.get(e.getKey()).addOrUpdate(new FixedMillisecond(counter), e.getValue());
         }
         counter++;
     }
@@ -85,13 +87,13 @@ public class TimeseriesChartPanel extends ChartPanel {
     // Add a set of values to the chart. One value for each serie
     public void addToChart(long timestampMS, Map<Integer, Float> data) {
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            series.get(e.getKey()).add(new FixedMillisecond(timestampMS), e.getValue());
+            series.get(e.getKey()).addOrUpdate(new FixedMillisecond(timestampMS), e.getValue());
         }
     }
     
     // Add a unique value with a specific timestamp to the cart
     public void addToChart(long timestampMS, int serieID, Float value) {
-        series.get(serieID).add(new FixedMillisecond(timestampMS), value);
+        series.get(serieID).addOrUpdate(new FixedMillisecond(timestampMS), value);
     }
 
     /**

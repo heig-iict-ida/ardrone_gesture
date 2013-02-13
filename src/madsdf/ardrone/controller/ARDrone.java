@@ -31,6 +31,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import madsdf.ardrone.gesture.TimeseriesChartPanel;
 import madsdf.shimmer.event.Globals;
 import org.jfree.chart.ChartPanel;
@@ -210,13 +211,8 @@ public class ARDrone extends JFrame implements Runnable {
         logArea.setEnabled(false);
         southPanel.add(logArea);
         
-        
-        Map<Integer, String> commandIDToName = Maps.newHashMap();
-        for (ActionCommand a: ActionCommand.values()) {
-            commandIDToName.put(a.ordinal(), a.name());
-        }
         commandPanel = new TimeseriesChartPanel("Drone commands",
-                "Time (samples)", "Activation", commandIDToName, 10000);
+                "Time (samples)", "Activation", ActionCommand.ordinalToName, 10000);
         commandPanel.setPreferredSize(new Dimension(0, 300));
         southPanel.add(commandPanel);
         
@@ -224,12 +220,7 @@ public class ARDrone extends JFrame implements Runnable {
             @Override
             public void run() {
                 while (true) {
-                    final Map<Integer, Float> data = Maps.newHashMap();
-                    for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
-                        final float v = e.getValue() ? 1 : 0;
-                        data.put(e.getKey().ordinal(), v);
-                    }
-                    commandPanel.addToChart(System.currentTimeMillis(), data);
+                    updateCommandChart();
                     try {
                         Thread.sleep(200);
                     } catch (InterruptedException ex) {}
@@ -313,13 +304,26 @@ public class ARDrone extends JFrame implements Runnable {
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
         // TODO: Should use configDrone.controller property
-        NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "mouvements_sensor_droit.properties");
+        //NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "mouvements_sensor_droit.properties");
         //NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "mouvements_sensor_gauche.properties");
 
         //ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
-        ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
+        //ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
         
         DTWGestureController rightGestureController = DTWGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
+    }
+    
+    private void updateCommandChart() {
+        SwingUtilities.invokeLater(new Runnable(){
+            public void run() {
+                final Map<Integer, Float> data = Maps.newHashMap();
+                for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
+                    final float v = e.getValue() ? 1 : 0;
+                    data.put(e.getKey().ordinal(), v);
+                }
+                commandPanel.addToChart(System.currentTimeMillis(), data);
+            }
+        });
     }
 
     /**
@@ -592,6 +596,7 @@ public class ARDrone extends JFrame implements Runnable {
         // thread doesn't miss it
         /*final float v = startAction ? 1 : 0;
         commandPanel.addToChart(System.currentTimeMillis(), command.ordinal(), v);*/
+        updateCommandChart();
         
         // TODO: We should do the same with ControlSender (make sure it doesn't
         // miss too short commands)
