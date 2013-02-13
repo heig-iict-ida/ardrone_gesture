@@ -3,6 +3,7 @@ package madsdf.ardrone.controller;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,6 +37,7 @@ import madsdf.ardrone.utils.WindowAccumulator;
 import madsdf.shimmer.gui.AccelGyro;
 import javax.swing.SwingUtilities;
 import madsdf.ardrone.utils.KNN;
+import madsdf.ardrone.utils.MathUtils;
 
 /**
  * Controller based on matching incoming measurements with gesture templates
@@ -184,23 +187,15 @@ public class DTWGestureController extends DroneController {
     }
     
     private void matchWindow(float[][] windowAccel) {
+        KNN knn = KNN.classify(KNN_K, windowAccel, gestureTemplates);
+        
         Map<Integer, Float> cmdDists = Maps.newHashMap();
-        for (ActionCommand command: gestureTemplates.keySet()) {
-            Collection<GestureTemplate> templates = gestureTemplates.get(command);
-            
-            ArrayList<Float> dists = Lists.newArrayList();
-            for (GestureTemplate g: templates) {
-                //dists.add(DTW.allAxisDTW(windowAccel, g.accel));
-                dists.add(DTW.allAxisEuclidean(windowAccel, g.gesture.accel));
-            }
-            
+        for (ActionCommand command: knn.distsPerClass.keySet()) {
+            Collection<Float> dists = knn.distsPerClass.get(command);
             final float dist = Collections.min(dists);
-            //final float dist = average(dists);
             cmdDists.put(command.ordinal(), dist);
         }
         updateChart(distFrame, cmdDists);
-        
-        KNN knn = KNN.classify(KNN_K, windowAccel, gestureTemplates);
         
         //System.out.println(_tmp);
         updateChart(knnFrame, toIntegerMap(knn.votesPerClass));
@@ -258,13 +253,13 @@ public class DTWGestureController extends DroneController {
         if (stddev > /*2000*/25) {
             List<Entry<ActionCommand, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final ActionCommand bestClass = l.get(0).getKey();
-            //System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
+            System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
             
             // Check that nearest neighbor is of majority class
-            if (knn.getNeighborClass(0) == bestClass) {
+            if (knn.getNeighborClass(0).equals(bestClass)) {
                 // Check that nearest neighbor dist is below threshold
-                //System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < /*10000*/125) {
+                System.out.println("dist : " + knn.getNeighborDist(0));
+                if (knn.getNeighborDist(0) < /*10000*/700) {
                     detections.put(bestClass, 1.0f);
                 }
             }

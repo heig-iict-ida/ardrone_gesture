@@ -8,12 +8,15 @@ import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import madsdf.ardrone.controller.ActionCommand;
 import madsdf.ardrone.controller.DTWGestureController.GestureTemplate;
 import madsdf.ardrone.gesture.DTW;
@@ -40,8 +43,9 @@ public class KNN {
     }
     
     public static KNN classify(int k, float[][] windowAccel,
-            Multimap<ActionCommand, GestureTemplate> gestureTemplates) {
-               // Contains (distance, gesture)
+        Multimap<ActionCommand, GestureTemplate> gestureTemplates) {
+        // Contains (distance, gesture)
+        // TODO: What if we have multiple gestures with same distance ??
         TreeMap<Float, GestureTemplate> gestureDistances = Maps.newTreeMap();
         for (GestureTemplate g : gestureTemplates.values()) {
             //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
@@ -52,14 +56,25 @@ public class KNN {
             final float dist = DTW.allAxisDTW(
                     MathUtils.medianFilter(windowAccel, 10), 
                     MathUtils.medianFilter(g.gesture.accel, 10));
+            if (gestureDistances.get(dist) != null) {
+                Logger.getLogger(KNN.class.getName()).log(Level.SEVERE, "Already a gesture with distance " + dist);
+            }
             gestureDistances.put(dist, g);
+        }
+        
+        ImmutableMultimap.Builder<ActionCommand, Float> distsPerClassBuilder =
+                ImmutableMultimap.builder();
+        for (Entry<Float, GestureTemplate> e: gestureDistances.entrySet()) {
+            final float dist = e.getKey();
+            final GestureTemplate g = e.getValue();
+            distsPerClassBuilder.put(g.command, dist);
         }
         
         FluentIterable<Entry<Float, GestureTemplate>> closest = FluentIterable
                 .from(gestureDistances.entrySet())
                 .limit(k);
         
-        return new KNN(gestureTemplates.keySet(), closest);
+        return new KNN(gestureTemplates.keySet(), closest, distsPerClassBuilder.build());
     }
     
     // Return a copy of 'source' where, when iterating using entrySet, the
@@ -88,35 +103,21 @@ public class KNN {
     // The iteration order over this map is fixed and in decreasing order of
     // class popularity
     public final ImmutableMap<ActionCommand, Float> votesPerClass;
-    public final ImmutableMap<ActionCommand, Float> distPerClass;
+    // TODO: Could use ImmutableTable with row = ActionCommand,
+    // column = GestureTemplate sample
+    public final ImmutableMultimap<ActionCommand, Float> distsPerClass;
     
     private KNN(Iterable<ActionCommand> allClasses,
-                Iterable<Entry<Float, GestureTemplate>> closest) {
+                Iterable<Entry<Float, GestureTemplate>> closest,
+                ImmutableMultimap<ActionCommand, Float> distsPerClass) {
         this.nearest = ImmutableList.copyOf(closest);
+        this.distsPerClass = distsPerClass;
         
         // Compute votes per class and average distance to class
         Map<ActionCommand, Float> _votesPerClass = Maps.newHashMap();
         zeroInit(_votesPerClass, allClasses);
-        // Note that we only compute dist per class for classes that have at
-        // least one instance in the nearest neighbors. Classes that aren't
-        // represented should be considered with a distance of infinity
-        Map<ActionCommand, Float> _distPerClass = Maps.newHashMap();
-        
-        for (Entry<Float, GestureTemplate> e: closest) {
-            final float dist = e.getKey();
-            final GestureTemplate g = e.getValue();
-            mapIncr(_votesPerClass, g.command, 1);
-            mapIncr(_distPerClass, g.command, dist);
-        }
-        
-        // Average dist
-        for (Entry<ActionCommand, Float> e: _distPerClass.entrySet()) {
-            final ActionCommand cmd = e.getKey();
-            _distPerClass.put(cmd, e.getValue() / (float) _votesPerClass.get(cmd));
-        }
         
         this.votesPerClass = valueSortedMap(_votesPerClass);
-        this.distPerClass = valueSortedMap(_distPerClass);
     }
     
     public float getNeighborDist(int neighbor) {
