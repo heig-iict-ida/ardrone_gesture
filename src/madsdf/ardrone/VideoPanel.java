@@ -1,4 +1,4 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

@@ -1,4 +1,4 @@
-package madsdf.ardrone.gesture;
+package madsdf.ardrone.controller.neuralnet;
 
 /**
  * This enum class represent all the features that can be used for the gesture

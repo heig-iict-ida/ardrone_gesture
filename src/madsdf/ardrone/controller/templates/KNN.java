@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package madsdf.ardrone.utils;
+package madsdf.ardrone.controller.templates;
 
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
@@ -17,10 +17,11 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import madsdf.ardrone.controller.ActionCommand;
-import madsdf.ardrone.controller.DTWGestureController.GestureTemplate;
-import madsdf.ardrone.gesture.DTW;
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.controller.templates.KNNGestureController.GestureTemplate;
+import madsdf.ardrone.utils.DTW;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
+import madsdf.ardrone.utils.MathUtils;
 
 public class KNN {
     // Increment the value of 'key' in 'map' by 'incr'. Create new entry

@@ -1,11 +1,11 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone.controller.neuralnet;
 
 import com.google.common.eventbus.Subscribe;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
-import madsdf.ardrone.gesture.DetectedMovementFrame;
-import madsdf.ardrone.gesture.MovementModel;
+import madsdf.ardrone.controller.neuralnet.DetectedMovementFrame;
+import madsdf.ardrone.controller.neuralnet.MovementModel;
 import java.awt.Point;
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -17,7 +17,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import layers.OutputLayer;
-import madsdf.ardrone.gesture.Features;
+import madsdf.ardrone.ARDrone;
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.controller.DroneController;
+import madsdf.ardrone.controller.neuralnet.Features;
 import madsdf.ardrone.utils.PropertiesReader;
 import madsdf.shimmer.gui.AccelGyro;
 import scripting.InterThreadMonitor;

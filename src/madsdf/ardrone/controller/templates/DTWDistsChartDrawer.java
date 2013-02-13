@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package madsdf.ardrone.gesture;
+package madsdf.ardrone.controller.templates;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.Maps;

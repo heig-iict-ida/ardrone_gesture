@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import madsdf.ardrone.controller.ActionCommand;
+import madsdf.ardrone.ActionCommand;
 
 /**
  * An thin wrapper around properties

@@ -1,4 +1,4 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone.controller.templates;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
@@ -27,22 +27,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import madsdf.ardrone.gesture.DTW;
-import madsdf.ardrone.gesture.TimeseriesChartFrame;
-import madsdf.ardrone.gesture.DetectedMovementFrame;
+import madsdf.ardrone.utils.DTW;
+import madsdf.ardrone.controller.templates.TimeseriesChartFrame;
+import madsdf.ardrone.controller.neuralnet.DetectedMovementFrame;
 import madsdf.ardrone.utils.DataFileReader;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
 import madsdf.ardrone.utils.PropertiesReader;
 import madsdf.ardrone.utils.WindowAccumulator;
 import madsdf.shimmer.gui.AccelGyro;
 import javax.swing.SwingUtilities;
-import madsdf.ardrone.utils.KNN;
+import madsdf.ardrone.ARDrone;
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.controller.DroneController;
+import madsdf.ardrone.controller.templates.KNN;
 import madsdf.ardrone.utils.MathUtils;
 
 /**
  * Controller based on matching incoming measurements with gesture templates
  */
-public class DTWGestureController extends DroneController {
+public class KNNGestureController extends DroneController {
     public static class GestureTemplate {
         public final ActionCommand command;
         public final Gesture gesture;
@@ -52,11 +55,11 @@ public class DTWGestureController extends DroneController {
         }
     }
     
-    public static DTWGestureController FromProperties(
+    public static KNNGestureController FromProperties(
             ImmutableSet<ActionCommand> actionMask, ARDrone drone,
             EventBus ebus, String configSensor) throws FileNotFoundException, IOException {
         PropertiesReader reader = new PropertiesReader(configSensor);
-        checkState(reader.getString("class_name").equals(DTWGestureController.class.getName()));
+        checkState(reader.getString("class_name").equals(KNNGestureController.class.getName()));
         
         String sensorDataBasedir = reader.getString("sensor_basedir");
         String templates_file = sensorDataBasedir + "/" + reader.getString("templates_file");
@@ -79,7 +82,7 @@ public class DTWGestureController extends DroneController {
             templates.add(new GestureTemplate(cmd, g));
         }
          
-        DTWGestureController ctrl = new DTWGestureController(actionMask, drone, templates, calibrated);
+        KNNGestureController ctrl = new KNNGestureController(actionMask, drone, templates, calibrated);
         ebus.register(ctrl);
         return ctrl;
     }
@@ -97,7 +100,7 @@ public class DTWGestureController extends DroneController {
     
     private final boolean calibrated;
     
-    public DTWGestureController(ImmutableSet<ActionCommand> actionMask,
+    public KNNGestureController(ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<GestureTemplate> templates,
                                 boolean calibrated) {
         super(actionMask, drone);
@@ -121,24 +124,24 @@ public class DTWGestureController extends DroneController {
                     b.put(a.ordinal(), a.name());
                 }
                 ImmutableMap<Integer, String> commandIDToName = b.build();
-                DTWGestureController.this.distFrame = new TimeseriesChartFrame(
+                KNNGestureController.this.distFrame = new TimeseriesChartFrame(
                         "Distance to gesture templates",
                         "Windows", "DTW distance", commandIDToName);
-                DTWGestureController.this.distFrame.setVisible(true);
+                KNNGestureController.this.distFrame.setVisible(true);
                 
-                DTWGestureController.this.knnFrame = new TimeseriesChartFrame(
+                KNNGestureController.this.knnFrame = new TimeseriesChartFrame(
                         "KNN votes",
                         "Windows", "votes", commandIDToName);
-                DTWGestureController.this.knnFrame.setVisible(true);
-                DTWGestureController.this.stdDevFrame = new TimeseriesChartFrame(
+                KNNGestureController.this.knnFrame.setVisible(true);
+                KNNGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
                         "Windows", "Stddev", ImmutableMap.of(0, "Stddev"));
-                DTWGestureController.this.stdDevFrame.setVisible(true);
+                KNNGestureController.this.stdDevFrame.setVisible(true);
                 
-                DTWGestureController.this.detectedFrame = new TimeseriesChartFrame(
+                KNNGestureController.this.detectedFrame = new TimeseriesChartFrame(
                         "Detected gestures",
                         "Windows", "Detected", commandIDToName);
-                DTWGestureController.this.detectedFrame.setVisible(true);
+                KNNGestureController.this.detectedFrame.setVisible(true);
             }
         });
     }

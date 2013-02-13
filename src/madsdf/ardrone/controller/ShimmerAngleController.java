@@ -3,6 +3,8 @@
  * and open the template in the editor.
  */
 package madsdf.ardrone.controller;
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.ARDrone;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;

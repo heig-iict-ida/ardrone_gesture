@@ -1,4 +1,4 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone;
 
 /**
  * This enum class represent the possible flying state of the drone.

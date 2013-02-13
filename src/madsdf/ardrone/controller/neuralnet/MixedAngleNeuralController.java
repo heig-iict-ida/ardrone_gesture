@@ -2,12 +2,15 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package madsdf.ardrone.controller;
+package madsdf.ardrone.controller.neuralnet;
 
 import com.google.common.eventbus.EventBus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import madsdf.ardrone.ARDrone;
+import madsdf.ardrone.controller.DroneController;
+import madsdf.ardrone.controller.ShimmerAngleController;
 import madsdf.ardrone.utils.PropertiesReader;
 
 /**

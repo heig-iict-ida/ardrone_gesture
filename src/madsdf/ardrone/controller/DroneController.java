@@ -4,7 +4,11 @@
  */
 package madsdf.ardrone.controller;
 
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.ARDrone;
 import com.google.common.collect.ImmutableSet;
+import madsdf.ardrone.ARDrone;
+import madsdf.ardrone.ActionCommand;
 
 /**
  *
@@ -23,7 +27,7 @@ public class DroneController {
         this.drone = drone;
     }
     
-    protected void updateDroneAction(ActionCommand cmd, boolean newState) {
+    public void updateDroneAction(ActionCommand cmd, boolean newState) {
         if (actionMask.contains(cmd)) {
             drone.updateActionMap(cmd, newState);
         }

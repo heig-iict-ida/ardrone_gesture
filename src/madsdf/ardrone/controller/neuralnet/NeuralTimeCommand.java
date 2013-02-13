@@ -1,6 +1,8 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone.controller.neuralnet;
 
 import java.util.concurrent.ConcurrentHashMap;
+import madsdf.ardrone.ActionCommand;
+import madsdf.ardrone.controller.DroneController;
 
 /**
  * This class manage the time a detected ActionCommand should have effect on

@@ -1,5 +1,6 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone;
 
+import madsdf.ardrone.ARDrone;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;

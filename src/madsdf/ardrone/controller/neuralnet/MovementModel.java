@@ -1,4 +1,4 @@
-package madsdf.ardrone.gesture;
+package madsdf.ardrone.controller.neuralnet;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.eventbus.EventBus;

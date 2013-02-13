@@ -1,12 +1,12 @@
-package madsdf.ardrone.controller;
+package madsdf.ardrone;
 
+import madsdf.ardrone.controller.templates.KNNGestureController;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.net.*;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -16,25 +16,17 @@ import javax.swing.JTextArea;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicProgressBarUI;
-import madsdf.ardrone.gesture.DetectedMovementFrame;
-import madsdf.ardrone.gesture.Features;
-import madsdf.ardrone.gesture.MovementModel;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 import static com.google.common.base.Preconditions.*;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import madsdf.ardrone.gesture.TimeseriesChartPanel;
+import madsdf.ardrone.controller.KeyboardController;
+import madsdf.ardrone.controller.templates.TimeseriesChartPanel;
 import madsdf.shimmer.event.Globals;
-import org.jfree.chart.ChartPanel;
 
 /**
  * ########### Gesture Command of a Quadricopter ###########
@@ -310,7 +302,7 @@ public class ARDrone extends JFrame implements Runnable {
         //ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
         //ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
         
-        DTWGestureController rightGestureController = DTWGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
+        KNNGestureController rightGestureController = KNNGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
     }
     
     private void updateCommandChart() {
