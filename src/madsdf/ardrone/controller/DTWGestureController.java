@@ -259,7 +259,7 @@ public class DTWGestureController extends DroneController {
             if (knn.getNeighborClass(0).equals(bestClass)) {
                 // Check that nearest neighbor dist is below threshold
                 System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < /*10000*/700) {
+                if (knn.getNeighborDist(0) < /*10000*/125) {
                     detections.put(bestClass, 1.0f);
                 }
             }

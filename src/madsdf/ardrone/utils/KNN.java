@@ -51,11 +51,14 @@ public class KNN {
             //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
             /*final float dist = DTW.allAxisEuclidean(
                     MathUtils.medianFilter(windowAccel, 10), 
-                    MathUtils.medianFilter(g.accel, 10));*/
-            //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
-            final float dist = DTW.allAxisDTW(
+                    MathUtils.medianFilter(g.gesture.accel, 10));*/
+            final float dist = DTW.multiDTWDistance(
                     MathUtils.medianFilter(windowAccel, 10), 
                     MathUtils.medianFilter(g.gesture.accel, 10));
+            //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
+            /*final float dist = DTW.allAxisDTW(
+                    MathUtils.medianFilter(windowAccel, 10), 
+                    MathUtils.medianFilter(g.gesture.accel, 10));*/
             if (gestureDistances.get(dist) != null) {
                 Logger.getLogger(KNN.class.getName()).log(Level.SEVERE, "Already a gesture with distance " + dist);
             }
@@ -116,6 +119,12 @@ public class KNN {
         // Compute votes per class and average distance to class
         Map<ActionCommand, Float> _votesPerClass = Maps.newHashMap();
         zeroInit(_votesPerClass, allClasses);
+        
+        for (Entry<Float, GestureTemplate> e : closest) {
+            final float dist = e.getKey();
+            final GestureTemplate g = e.getValue();
+            mapIncr(_votesPerClass, g.command, 1);
+        }
         
         this.votesPerClass = valueSortedMap(_votesPerClass);
     }

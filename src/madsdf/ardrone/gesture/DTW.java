@@ -45,8 +45,41 @@ public class DTW {
         return D[N-1][M-1];
     }
     
+    // DTW distance between multidimensional series (forces alignment across
+    // all dimensions)
+    public static float multiDTWDistance(float[][] serie1, float[][] serie2) {
+        final int N = serie1.length;
+        final int M = serie2.length;
+        final float D[][] = new float[N][M];
+        // Instead of initializing the first line and row to infinity and having
+        // a (N+1) * (M+1) matrix, we "merge" the two first lines and therefore
+        // directly initialize to the distance.
+        // That's inspired by mlpy's implementation (and a bit different from
+        // Wikipedia's implementation which uses 1-based indexing for serie and
+        // 0-based indexing for cost matrix
+        D[0][0] = euclideanDist(serie1[0], serie2[0]);
+        for (int i = 1 ; i < N; ++i) {
+            D[i][0] = D[i-1][0] + euclideanDist(serie1[i], serie2[0]);
+        }
+        for (int i = 1; i < M; ++i) {
+            D[0][i] = D[0][i-1] + euclideanDist(serie1[0], serie2[i]);
+        }
+        
+        for (int i = 1; i < N; ++i) {
+            for (int j = 1; j < M; ++j) {
+                final float cost = euclideanDist(serie1[i], serie2[j]);
+                D[i][j] = cost + min3(D[i-1][j], // insertion
+                                      D[i][j-1], // deletion
+                                      D[i-1][j-1]); // match
+            }
+        }
+        //System.out.println(Arrays.deepToString(D));
+        return D[N-1][M-1];
+    }
+    
     // sum of DTW distance between corresponding axis of two series
     // data is NxM where N is the number of axis and M the number of values
+    // doesn't force alignment across series axes
     public static float allAxisDTW(float[][] serie1, float[][] serie2) {
         // TODO: This is wrong, need to do DTW on all 3 axis at the same time
         // (we should use the same path on all axis)
