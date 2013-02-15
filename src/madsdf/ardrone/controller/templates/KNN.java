@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.TreeMultimap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -46,8 +47,7 @@ public class KNN {
     public static KNN classify(int k, float[][] windowAccel,
         Multimap<ActionCommand, GestureTemplate> gestureTemplates) {
         // Contains (distance, gesture)
-        // TODO: What if we have multiple gestures with same distance ??
-        TreeMap<Float, GestureTemplate> gestureDistances = Maps.newTreeMap();
+        TreeMultimap<Float, GestureTemplate> gestureDistances = TreeMultimap.create();
         for (GestureTemplate g : gestureTemplates.values()) {
             //final float dist = DTW.allAxisEuclidean(windowAccel, g.accel);
             /*final float dist = DTW.allAxisEuclidean(
@@ -60,22 +60,19 @@ public class KNN {
             final float dist = DTW.allAxisDTW(
                     MathUtils.medianFilter(windowAccel, 10), 
                     MathUtils.medianFilter(g.gesture.accel, 10));
-            if (gestureDistances.get(dist) != null) {
-                Logger.getLogger(KNN.class.getName()).log(Level.SEVERE, "Already a gesture with distance " + dist);
-            }
             gestureDistances.put(dist, g);
         }
         
         ImmutableMultimap.Builder<ActionCommand, Float> distsPerClassBuilder =
                 ImmutableMultimap.builder();
-        for (Entry<Float, GestureTemplate> e: gestureDistances.entrySet()) {
+        for (Entry<Float, GestureTemplate> e: gestureDistances.entries()) {
             final float dist = e.getKey();
             final GestureTemplate g = e.getValue();
             distsPerClassBuilder.put(g.command, dist);
         }
         
         FluentIterable<Entry<Float, GestureTemplate>> closest = FluentIterable
-                .from(gestureDistances.entrySet())
+                .from(gestureDistances.entries())
                 .limit(k);
         
         return new KNN(gestureTemplates.keySet(), closest, distsPerClassBuilder.build());

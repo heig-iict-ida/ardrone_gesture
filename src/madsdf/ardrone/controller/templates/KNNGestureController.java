@@ -2,6 +2,7 @@ package madsdf.ardrone.controller.templates;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -33,12 +34,19 @@ import madsdf.ardrone.controller.DroneController;
  * Controller based on matching incoming measurements with gesture templates
  */
 public class KNNGestureController extends DroneController {
-    public static class GestureTemplate {
+    public static class GestureTemplate implements Comparable<GestureTemplate> {
         public final ActionCommand command;
         public final Gesture gesture;
         public GestureTemplate(ActionCommand cmd, Gesture g) {
             this.command = cmd;
             this.gesture = g;
+        }
+
+        @Override
+        public int compareTo(GestureTemplate that) {
+            return ComparisonChain.start()
+                .compare(this.command, that.command)
+                .result();
         }
     }
     
@@ -241,7 +249,7 @@ public class KNNGestureController extends DroneController {
             }
         }*/
         
-        if (stddev > /*2000*/25) {
+        if (stddev > 2000/*25*/) {
             List<Entry<ActionCommand, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final ActionCommand bestClass = l.get(0).getKey();
             System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
@@ -250,7 +258,7 @@ public class KNNGestureController extends DroneController {
             if (knn.getNeighborClass(0).equals(bestClass)) {
                 // Check that nearest neighbor dist is below threshold
                 System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < /*10000*/125) {
+                if (knn.getNeighborDist(0) < 100000/*125*/) {
                     detections.put(bestClass, 1.0f);
                 }
             }
