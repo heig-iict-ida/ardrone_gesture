@@ -2,34 +2,23 @@ package madsdf.ardrone.controller.templates;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Ordering;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.google.common.primitives.Floats;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
-import madsdf.ardrone.utils.DTW;
-import madsdf.ardrone.controller.templates.TimeseriesChartFrame;
-import madsdf.ardrone.controller.neuralnet.DetectedMovementFrame;
 import madsdf.ardrone.utils.DataFileReader;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
 import madsdf.ardrone.utils.PropertiesReader;
@@ -39,8 +28,6 @@ import javax.swing.SwingUtilities;
 import madsdf.ardrone.ARDrone;
 import madsdf.ardrone.ActionCommand;
 import madsdf.ardrone.controller.DroneController;
-import madsdf.ardrone.controller.templates.KNN;
-import madsdf.ardrone.utils.MathUtils;
 
 /**
  * Controller based on matching incoming measurements with gesture templates
@@ -119,11 +106,11 @@ public class KNNGestureController extends DroneController {
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                ImmutableMap.Builder<Integer, String> b = ImmutableMap.builder();
+                ImmutableSortedMap.Builder<Integer, String> b = ImmutableSortedMap.naturalOrder();
                 for (ActionCommand a : gestureTemplates.keySet()) {
                     b.put(a.ordinal(), a.name());
                 }
-                ImmutableMap<Integer, String> commandIDToName = b.build();
+                ImmutableSortedMap<Integer, String> commandIDToName = b.build();
                 KNNGestureController.this.distFrame = new TimeseriesChartFrame(
                         "Distance to gesture templates",
                         "Windows", "DTW distance", commandIDToName);
@@ -135,7 +122,7 @@ public class KNNGestureController extends DroneController {
                 KNNGestureController.this.knnFrame.setVisible(true);
                 KNNGestureController.this.stdDevFrame = new TimeseriesChartFrame(
                         "Standard deviation",
-                        "Windows", "Stddev", ImmutableMap.of(0, "Stddev"));
+                        "Windows", "Stddev", ImmutableSortedMap.of(0, "Stddev"));
                 KNNGestureController.this.stdDevFrame.setVisible(true);
                 
                 KNNGestureController.this.detectedFrame = new TimeseriesChartFrame(
@@ -158,12 +145,12 @@ public class KNNGestureController extends DroneController {
         return data;
     }
     
-    public float average(List<Float> lst) {
+    public float average(Collection<Float> col) {
         float sum = 0;
-        for (Float f: lst) {
+        for (Float f: col) {
             sum += f;
         }
-        return sum / lst.size();
+        return sum / col.size();
     }
     
     public float stddev(float[] arr) {
@@ -195,7 +182,8 @@ public class KNNGestureController extends DroneController {
         Map<Integer, Float> cmdDists = Maps.newHashMap();
         for (ActionCommand command: knn.distsPerClass.keySet()) {
             Collection<Float> dists = knn.distsPerClass.get(command);
-            final float dist = Collections.min(dists);
+            //final float dist = Collections.min(dists);
+            final float dist = average(dists);
             cmdDists.put(command.ordinal(), dist);
         }
         updateChart(distFrame, cmdDists);

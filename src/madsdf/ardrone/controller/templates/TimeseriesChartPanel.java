@@ -5,15 +5,20 @@
 package madsdf.ardrone.controller.templates;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import java.awt.Color;
+import java.awt.Paint;
 import java.util.Map;
 import javax.swing.SwingUtilities;
+import madsdf.ardrone.ActionCommand;
+import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -23,30 +28,37 @@ import org.jfree.data.time.TimeSeriesCollection;
  * @author julien
  */
 public class TimeseriesChartPanel extends ChartPanel {
-    private Map<Integer, TimeSeries> series;
+    private Map<Integer, TimeSeries> series = Maps.newHashMap();
+    // Maps user-specified Integer id to Jfreechart timeseries collection id
+    private Map<Integer, Integer> userIDToChartID = Maps.newHashMap();
     private JFreeChart chart;
     
     private int counter = Integer.MIN_VALUE;
     
+    // Return paints associated to serie id. This is used to ensure that
+    // commands are plotted with the same color across the application
+    private static Paint[] paints = ChartColor.createDefaultPaintArray();
+    
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                ImmutableMap<Integer, String> seriesIDToName) {
+                                ImmutableSortedMap<Integer, String> seriesIDToName) {
         this(title, xAxisLabel, yAxisLabel, seriesIDToName, 100);
     }
     
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                ImmutableMap<Integer, String> seriesIDToName,
+                                ImmutableSortedMap<Integer, String> seriesIDToName,
                                 long numVisible) {
         super(null);
         initComponents();
         
-        series = Maps.newHashMap();
         TimeSeriesCollection accelCol = new TimeSeriesCollection();
         for (Map.Entry<Integer, String> e : seriesIDToName.entrySet()) {
+            System.out.println(e.getValue() + " " + e.getKey());
             final TimeSeries s = new TimeSeries(e.getValue());
             series.put(e.getKey(), s);
             accelCol.addSeries(s);
+            userIDToChartID.put(e.getKey(), accelCol.getSeriesCount() - 1);
         }
         
         chart = ChartFactory.createTimeSeriesChart(
@@ -59,15 +71,22 @@ public class TimeseriesChartPanel extends ChartPanel {
                 false);
         
         XYPlot plot = chart.getXYPlot();
-        plot.setRangeGridlinesVisible(false);     // Hide the grid in the graph
+        plot.setRangeGridlinesVisible(false);
         plot.setDomainGridlinesVisible(false);
         plot.setBackgroundPaint(Color.WHITE);
+        XYItemRenderer r = plot.getRenderer();
+        
+        for (Map.Entry<Integer, String> e : seriesIDToName.entrySet()) {
+            final int v = e.getKey();
+            r.setSeriesPaint(userIDToChartID.get(v), paints[v]);
+        }
+        
         ValueAxis axisAcc = plot.getDomainAxis();
-        axisAcc.setTickMarksVisible(true);    // Define the tick count
+        axisAcc.setTickMarksVisible(true);
         axisAcc.setMinorTickCount(10);
         axisAcc.setAutoRange(true);
-        axisAcc.setFixedAutoRange(numVisible);     // Define the number of visible value
-        axisAcc.setTickLabelsVisible(true);  // Hide the axis labels
+        axisAcc.setFixedAutoRange(numVisible);
+        axisAcc.setTickLabelsVisible(true);
         
         this.setChart(chart);
     }

@@ -4,20 +4,9 @@
  */
 package madsdf.ardrone.controller.templates;
 
-import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import java.awt.Color;
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.data.time.FixedMillisecond;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
 
 /**
  *
@@ -25,13 +14,13 @@ import org.jfree.data.time.TimeSeriesCollection;
  */
 public class TimeseriesChartFrame extends javax.swing.JFrame {
     private final String title, xAxisLabel, yAxisLabel;
-    private final ImmutableMap<Integer, String> seriesIDToName;
+    private final ImmutableSortedMap<Integer, String> seriesIDToName;
     /**
      * Creates new form DTWDistanceFrame
      */
     public TimeseriesChartFrame(String title,
                                 String xAxisLabel, String yAxisLabel,
-                                ImmutableMap<Integer, String> seriesIDToName) {
+                                ImmutableSortedMap<Integer, String> seriesIDToName) {
         // Those variables are used in initComponents()
         this.title = title;
         this.xAxisLabel = xAxisLabel;

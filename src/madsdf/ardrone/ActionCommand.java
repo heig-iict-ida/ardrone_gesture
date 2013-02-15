@@ -2,6 +2,9 @@ package madsdf.ardrone;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
+import java.awt.Paint;
+import org.jfree.chart.ChartColor;
 
 /**
  * Enumeration class describing a possible action for the drone
@@ -36,9 +39,9 @@ public enum ActionCommand
    }
    
    // Map ActionCommand.ordinal() to ActionCommand.name()
-   public static final ImmutableMap<Integer, String> ordinalToName;
+   public static final ImmutableSortedMap<Integer, String> ordinalToName;
    static {
-       ImmutableMap.Builder<Integer, String> b = ImmutableMap.builder();
+       ImmutableSortedMap.Builder<Integer, String> b = ImmutableSortedMap.naturalOrder();
        for (ActionCommand a : ActionCommand.values()) {
            b.put(a.ordinal(), a.name());
        }
