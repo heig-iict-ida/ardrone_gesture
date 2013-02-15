@@ -14,9 +14,11 @@ import com.google.common.eventbus.Subscribe;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -90,6 +92,8 @@ public class KNNGestureController extends DroneController {
     private TimeseriesChartFrame stdDevFrame;
     private TimeseriesChartFrame knnFrame;
     private TimeseriesChartFrame detectedFrame;
+    
+    private GestureDetector gestureDetector = new GestureDetector();
     
     private static final int KNN_K = 3;
     
@@ -218,6 +222,84 @@ public class KNNGestureController extends DroneController {
         });
     }
     
+    // Gesture detector that makes a decision based on current and historical
+    // KNN votes
+    private static class GestureDetector {
+        private static class Entry {
+            public final KNN knn;
+            public final float stddev;
+            public Entry(KNN knn, float stddev) {
+                this.knn = knn;
+                this.stddev = stddev;
+            }
+        }
+        
+        private final static float STDDEV_THRESHOLD = 2000;
+        private final static float NEAREST_DIST_THRESHOLD = 100000;
+        // Minimum number of NN that should agree
+        private final static int NN_MIN_AGREE = (int)(KNN_K * 2. / 3.);
+        
+        private final static int HISTORY_SIZE = 5;
+        private Deque<Entry> history = new ArrayDeque<>();
+        
+        public void addVotation(KNN knn, float stddev) {
+            history.addLast(new Entry(knn, stddev));
+            while (history.size() > HISTORY_SIZE) {
+                history.removeFirst();
+            }
+        }
+        
+        public ActionCommand decide() {
+            ActionCommand prevBest = null;
+            //System.out.println("==== decide ====");
+            for (Entry e: history) {
+                final KNN knn = e.knn;
+                final float stddev = e.stddev;
+                // Check stddev above threshold
+                if (stddev < STDDEV_THRESHOLD) {
+                    return ActionCommand.NOTHING;
+                }
+                
+                // Check that nearest neighbor is of majority class
+                List<Map.Entry<ActionCommand, Float>> l = Lists.newArrayList(
+                        knn.votesPerClass.entrySet());
+                final ActionCommand bestClass = l.get(0).getKey();
+                //System.out.println("best : " + bestClass);
+                if (!knn.getNeighborClass(0).equals(bestClass)) {
+                    return ActionCommand.NOTHING;
+                }
+                //System.out.println("1");
+                // Check dist of nearest neighbour below threshold
+                if (knn.getNeighborDist(0) > NEAREST_DIST_THRESHOLD) {
+                    return ActionCommand.NOTHING;
+                }
+                //System.out.println("2");
+                
+                // Check number of agreeing NN
+                //System.out.println("votes for best : " + knn.votesPerClass.get(bestClass));
+                //System.out.println("min agree : " + NN_MIN_AGREE);
+                if (knn.votesPerClass.get(bestClass) < NN_MIN_AGREE) {
+                    return ActionCommand.NOTHING;
+                }
+                //System.out.println("3");
+                
+                // Check that previous votation detected same class as us
+                if (prevBest != null && prevBest != bestClass) {
+                    return ActionCommand.NOTHING;
+                }
+                //System.out.println("4");
+                
+                prevBest = bestClass;
+            }
+            
+            // If we reach this point, this means that all entries in history
+            // have :
+            // - detected the same class
+            // - fulfilled all conditions
+            return prevBest;
+        }
+    }
+    
     
     private void decideGesture(final KNN knn,
                                float stddev) {
@@ -225,6 +307,9 @@ public class KNNGestureController extends DroneController {
         for (ActionCommand command: gestureTemplates.keySet()) {
             detections.put(command, 0.0f);
         }
+        
+        gestureDetector.addVotation(knn, stddev);
+        detections.put(gestureDetector.decide(), 1.0f);
         
         /*if (stddev > 2000) {
             // Sort by number of votes
@@ -249,7 +334,7 @@ public class KNNGestureController extends DroneController {
             }
         }*/
         
-        if (stddev > 2000/*25*/) {
+        /*if (stddev > 2000) {  // 25
             List<Entry<ActionCommand, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
             final ActionCommand bestClass = l.get(0).getKey();
             System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
@@ -258,11 +343,11 @@ public class KNNGestureController extends DroneController {
             if (knn.getNeighborClass(0).equals(bestClass)) {
                 // Check that nearest neighbor dist is below threshold
                 System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < 100000/*125*/) {
+                if (knn.getNeighborDist(0) < 100000) { // 125
                     detections.put(bestClass, 1.0f);
                 }
             }
-        }
+        }*/
         
         updateChart(detectedFrame, toIntegerMap(detections));
         sendToDrone(detections);

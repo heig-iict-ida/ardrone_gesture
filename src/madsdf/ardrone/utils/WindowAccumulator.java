@@ -2,19 +2,16 @@ package madsdf.ardrone.utils;
 
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.Lists;
-import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
-import madsdf.shimmer.gui.AccelGyro;
 
 // A class that can be used to accumulate data to create sliding windows
 // with a specified step size
 public class WindowAccumulator<T> {
     private int windowSize;
     private int step;
-    private Deque<T> buffer = new ArrayDeque<T>();
+    private Deque<T> buffer = new ArrayDeque<>();
 
     public WindowAccumulator(int windowSize, int step) {
         this.windowSize = windowSize;
