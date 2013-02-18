@@ -205,7 +205,8 @@ public class ARDrone extends JFrame implements Runnable {
         southPanel.add(logArea);
         
         commandPanel = new TimeseriesChartPanel("Drone commands",
-                "Time (samples)", "Activation", ActionCommand.ordinalToName, 10000);
+                "Time (samples)", "Activation", ActionCommand.ordinalToName, 200,
+                0, 1);
         commandPanel.setPreferredSize(new Dimension(0, 300));
         southPanel.add(commandPanel);
         
@@ -288,9 +289,9 @@ public class ARDrone extends JFrame implements Runnable {
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
-        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
-        //leftShimmer.setVisible(true);
+        leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
 
         EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
@@ -307,10 +308,10 @@ public class ARDrone extends JFrame implements Runnable {
                 KNNGestureController.FromProperties("right",
                 ActionCommand.allCommandMask(), this, rightBus,
                 "dtw_gestures_right.properties");
-        /*KNNGestureController leftGestureController =
+        KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
-                "dtw_gestures_left.properties");*/
+                "dtw_gestures_left.properties");
         System.out.println("Running..");
     }
     

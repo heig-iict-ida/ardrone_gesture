@@ -7,11 +7,17 @@ package madsdf.ardrone.controller.templates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
+import info.monitorenter.gui.chart.Chart2D;
+import info.monitorenter.gui.chart.IAxis;
+import info.monitorenter.gui.chart.IAxis.AxisTitle;
+import info.monitorenter.gui.chart.ITrace2D;
+import info.monitorenter.gui.chart.traces.Trace2DLtd;
 import java.awt.Color;
 import java.awt.Paint;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import madsdf.ardrone.ActionCommand;
+import madsdf.shimmer.gui.ChartsDrawer;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -29,16 +35,10 @@ import org.jfree.data.time.TimeSeriesCollection;
  *
  * @author julien
  */
-public class TimeseriesChartPanel extends ChartPanel {
-    private Map<Integer, TimeSeries> series = Maps.newHashMap();
-    // Maps user-specified Integer id to Jfreechart timeseries collection id
-    private Map<Integer, Integer> userIDToChartID = Maps.newHashMap();
-    private JFreeChart chart;
-    
-    private int counter = Integer.MIN_VALUE;
+public class TimeseriesChartPanel extends Chart2D {
     public final String title;
     
-    private long lastAdd = System.currentTimeMillis();
+    private Map<Integer, ITrace2D> traces = Maps.newHashMap();
     
     // Return paints associated to serie id. This is used to ensure that
     // commands are plotted with the same color across the application
@@ -47,55 +47,32 @@ public class TimeseriesChartPanel extends ChartPanel {
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
                                 ImmutableSortedMap<Integer, String> seriesIDToName) {
-        this(title, xAxisLabel, yAxisLabel, seriesIDToName, 100);
+        this(title, xAxisLabel, yAxisLabel, seriesIDToName, 100, 0, 1);
     }
     
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
                                 ImmutableSortedMap<Integer, String> seriesIDToName,
-                                int numVisible) {
-        super(null);
+                                int numVisible,
+                                float min, float max) {
+        super();
         initComponents();
         
         this.title = title;
         
-        TimeSeriesCollection accelCol = new TimeSeriesCollection();
         for (Map.Entry<Integer, String> e : seriesIDToName.entrySet()) {
-            System.out.println(e.getValue() + " " + e.getKey());
-            final TimeSeries s = new TimeSeries(e.getValue());
-            series.put(e.getKey(), s);
-            accelCol.addSeries(s);
-            userIDToChartID.put(e.getKey(), accelCol.getSeriesCount() - 1);
+            ITrace2D trace = new Trace2DLtd(numVisible);
+            trace.setName(e.getValue());
+            trace.setColor(ChartsDrawer.colors[e.getKey()]);
+            traces.put(e.getKey(), trace);
+            this.addTrace(trace);
         }
         
-        chart = ChartFactory.createTimeSeriesChart(
-                title,
-                xAxisLabel,
-                yAxisLabel,
-                accelCol,
-                true,
-                false,
-                false);
-        
-        XYPlot plot = chart.getXYPlot();
-        plot.setRangeGridlinesVisible(false);
-        plot.setDomainGridlinesVisible(false);
-        plot.setBackgroundPaint(Color.WHITE);
-        XYItemRenderer r = plot.getRenderer();
-        
-        for (Map.Entry<Integer, String> e : seriesIDToName.entrySet()) {
-            final int v = e.getKey();
-            r.setSeriesPaint(userIDToChartID.get(v), paints[v]);
-        }
-        
-        ValueAxis timeAxis = plot.getDomainAxis();
-        timeAxis.setTickMarksVisible(true);
-        timeAxis.setMinorTickCount(10);
-        timeAxis.setAutoRange(true);
-        timeAxis.setFixedAutoRange(numVisible);
-        timeAxis.setTickLabelsVisible(true);
-        
-        this.setChart(chart);
+        IAxis yAxis = this.getAxisY();
+        yAxis.setAxisTitle(new AxisTitle(yAxisLabel));
+        yAxis.setRangePolicy(new ChartsDrawer.RangePolicyMaxSeen(min, max));
+        IAxis xAxis = this.getAxisX();
+        xAxis.setAxisTitle(new AxisTitle(xAxisLabel));
     }
     
     // There are different way to update the chart. Note that you should
@@ -105,6 +82,10 @@ public class TimeseriesChartPanel extends ChartPanel {
     // Add a set of values to the chart. One value for each serie
     public void addToChart(ImmutableMap<Integer, Float> data) {
         final long now = System.currentTimeMillis();
+        for (Map.Entry<Integer, Float> e : data.entrySet()) {
+            traces.get(e.getKey()).addPoint(now, e.getValue());
+        }
+        /*final long now = System.currentTimeMillis();
         final boolean notify = (now - lastAdd) > 200;
         if (notify) {
             lastAdd = now;
@@ -113,7 +94,7 @@ public class TimeseriesChartPanel extends ChartPanel {
             //series.get(e.getKey()).addOrUpdate(new FixedMillisecond(counter), e.getValue());
             series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue(), notify);
         }
-        counter++;
+        counter++;*/
     }
     
     // Add a set of values to the chart. One value for each serie

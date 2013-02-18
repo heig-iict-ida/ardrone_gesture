@@ -98,10 +98,6 @@ public class KNNGestureController extends DroneController {
     private WindowAccumulator accumulator =
             new WindowAccumulator<AccelGyro.Sample>(150, 15);
     
-    /*private TimeseriesChartFrame distFrame;
-    private TimeseriesChartFrame stdDevFrame;
-    private TimeseriesChartFrame knnFrame;
-    private TimeseriesChartFrame detectedFrame;*/
     private TimeseriesChartPanel distChartPanel;
     private TimeseriesChartPanel stdChartPanel;
     private TimeseriesChartPanel knnChartPanel;
@@ -361,6 +357,7 @@ public class KNNGestureController extends DroneController {
     
     private void decideGesture(final KNN knn,
                                float stddev) {
+        gestureDetector.addVotation(knn, stddev);
         final ActionCommand detected = gestureDetector.decide();
         ImmutableMap.Builder<ActionCommand, Float> _detections = ImmutableMap.builder();
         for (ActionCommand command: gestureTemplates.keySet()) {
