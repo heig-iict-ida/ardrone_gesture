@@ -1,5 +1,11 @@
 package madsdf.ardrone.controller.templates;
 
+import bibliothek.gui.DockController;
+import bibliothek.gui.DockStation;
+import bibliothek.gui.Dockable;
+import bibliothek.gui.dock.DefaultDockable;
+import bibliothek.gui.dock.SplitDockStation;
+import bibliothek.gui.dock.station.split.SplitDockGrid;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ComparisonChain;
@@ -11,6 +17,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -22,6 +30,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.swing.JFrame;
 import madsdf.ardrone.utils.DataFileReader;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
 import madsdf.ardrone.utils.PropertiesReader;
@@ -53,6 +62,7 @@ public class KNNGestureController extends DroneController {
     }
     
     public static KNNGestureController FromProperties(
+            String name,
             ImmutableSet<ActionCommand> actionMask, ARDrone drone,
             EventBus ebus, String configSensor) throws FileNotFoundException, IOException {
         PropertiesReader reader = new PropertiesReader(configSensor);
@@ -79,7 +89,7 @@ public class KNNGestureController extends DroneController {
             templates.add(new GestureTemplate(cmd, g));
         }
          
-        KNNGestureController ctrl = new KNNGestureController(actionMask, drone, templates, calibrated);
+        KNNGestureController ctrl = new KNNGestureController(name, actionMask, drone, templates, calibrated);
         ebus.register(ctrl);
         return ctrl;
     }
@@ -88,10 +98,17 @@ public class KNNGestureController extends DroneController {
     private WindowAccumulator accumulator =
             new WindowAccumulator<AccelGyro.Sample>(150, 15);
     
-    private TimeseriesChartFrame distFrame;
+    /*private TimeseriesChartFrame distFrame;
     private TimeseriesChartFrame stdDevFrame;
     private TimeseriesChartFrame knnFrame;
-    private TimeseriesChartFrame detectedFrame;
+    private TimeseriesChartFrame detectedFrame;*/
+    private TimeseriesChartPanel distChartPanel;
+    private TimeseriesChartPanel stdChartPanel;
+    private TimeseriesChartPanel knnChartPanel;
+    private TimeseriesChartPanel detectedChartPanel;
+    
+    private JFrame chartFrame;
+    private DockController dockController;
     
     private GestureDetector gestureDetector = new GestureDetector();
     
@@ -99,7 +116,8 @@ public class KNNGestureController extends DroneController {
     
     private final boolean calibrated;
     
-    public KNNGestureController(ImmutableSet<ActionCommand> actionMask,
+    public KNNGestureController(final String name,
+                                ImmutableSet<ActionCommand> actionMask,
                                 ARDrone drone, List<GestureTemplate> templates,
                                 boolean calibrated) {
         super(actionMask, drone);
@@ -118,31 +136,69 @@ public class KNNGestureController extends DroneController {
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
+                // Dockable frame creation
+                chartFrame = new JFrame();
+                chartFrame.setTitle(name);
+                dockController = new DockController();
+                dockController.setRootWindow(chartFrame);
+                chartFrame.addWindowListener(new WindowAdapter() {
+                   public void windowClosing(WindowEvent e) {
+                       dockController.kill();
+                   } 
+                });
+                SplitDockStation station = new SplitDockStation();
+                dockController.add(station);
+                chartFrame.add(station);
+                
+                final int GRID_SIZE = 200;
+                chartFrame.setBounds(40, 40, 2*GRID_SIZE, 2*GRID_SIZE);
+                
+                
+                SplitDockGrid grid = new SplitDockGrid();
+                
+                // Chart panels
                 ImmutableSortedMap.Builder<Integer, String> b = ImmutableSortedMap.naturalOrder();
                 for (ActionCommand a : gestureTemplates.keySet()) {
                     b.put(a.ordinal(), a.name());
                 }
                 ImmutableSortedMap<Integer, String> commandIDToName = b.build();
-                KNNGestureController.this.distFrame = new TimeseriesChartFrame(
+                
+                distChartPanel = new TimeseriesChartPanel(
                         "Distance to gesture templates",
                         "Windows", "DTW distance", commandIDToName);
-                KNNGestureController.this.distFrame.setVisible(true);
+                Dockable d = createDockable(distChartPanel);
+                grid.addDockable(0, 0, GRID_SIZE, GRID_SIZE, d);
                 
-                KNNGestureController.this.knnFrame = new TimeseriesChartFrame(
+                knnChartPanel = new TimeseriesChartPanel(
                         "KNN votes",
                         "Windows", "votes", commandIDToName);
-                KNNGestureController.this.knnFrame.setVisible(true);
-                KNNGestureController.this.stdDevFrame = new TimeseriesChartFrame(
+                d = createDockable(knnChartPanel);
+                grid.addDockable(0, GRID_SIZE, GRID_SIZE, GRID_SIZE, d);
+                stdChartPanel = new TimeseriesChartPanel(
                         "Standard deviation",
                         "Windows", "Stddev", ImmutableSortedMap.of(0, "Stddev"));
-                KNNGestureController.this.stdDevFrame.setVisible(true);
+                d = createDockable(stdChartPanel);
+                grid.addDockable(GRID_SIZE, 0, GRID_SIZE, GRID_SIZE, d);
                 
-                KNNGestureController.this.detectedFrame = new TimeseriesChartFrame(
+                detectedChartPanel = new TimeseriesChartPanel(
                         "Detected gestures",
                         "Windows", "Detected", commandIDToName);
-                KNNGestureController.this.detectedFrame.setVisible(true);
+                d = createDockable(detectedChartPanel);
+                grid.addDockable(GRID_SIZE, GRID_SIZE, GRID_SIZE, GRID_SIZE, d);
+                
+                station.dropTree(grid.toTree());
+                
+                chartFrame.setVisible(true);
+                
             }
         });
+    }
+    
+    private static Dockable createDockable(TimeseriesChartPanel chartPanel) {
+        DefaultDockable dockable = new DefaultDockable();
+        dockable.setTitleText(chartPanel.title);
+        dockable.add(chartPanel);
+        return dockable;
     }
     
     private static float[][] windowAccelToFloat(
@@ -198,22 +254,22 @@ public class KNNGestureController extends DroneController {
             final float dist = average(dists);
             cmdDists.put(command.ordinal(), dist);
         }
-        updateChart(distFrame, cmdDists);
+        updateChart(distChartPanel, cmdDists);
         
         //System.out.println(_tmp);
-        updateChart(knnFrame, toIntegerMap(knn.votesPerClass));
+        updateChart(knnChartPanel, toIntegerMap(knn.votesPerClass));
         
         float meanStddev = (stddev(windowAccel[0]) + stddev(windowAccel[1])
                 + stddev(windowAccel[2])) / 3.0f;
         Map<Integer, Float> chartData = Maps.newHashMap();
         chartData.put(0, meanStddev);
-        updateChart(stdDevFrame, chartData);
+        updateChart(stdChartPanel, chartData);
         
         // Finally, decide if we detected something
         decideGesture(knn, meanStddev);
     }
     
-    private static void updateChart(final TimeseriesChartFrame panel,
+    private static void updateChart(final TimeseriesChartPanel panel,
                                     final Map<Integer, Float> data) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -349,7 +405,7 @@ public class KNNGestureController extends DroneController {
             }
         }*/
         
-        updateChart(detectedFrame, toIntegerMap(detections));
+        updateChart(detectedChartPanel, toIntegerMap(detections));
         sendToDrone(detections);
     }
     

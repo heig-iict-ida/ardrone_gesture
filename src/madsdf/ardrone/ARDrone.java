@@ -287,12 +287,12 @@ public class ARDrone extends JFrame implements Runnable {
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
-        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
-        //leftShimmer.setVisible(true);
+        leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
 
-        //EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
+        EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
         // TODO: Should use configDrone.controller property
@@ -302,7 +302,14 @@ public class ARDrone extends JFrame implements Runnable {
         //ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
         //ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
         
-        KNNGestureController rightGestureController = KNNGestureController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "dtw_gestures_right.properties");
+        KNNGestureController rightGestureController =
+                KNNGestureController.FromProperties("right",
+                ActionCommand.allCommandMask(), this, rightBus,
+                "dtw_gestures_right.properties");
+        KNNGestureController leftGestureController =
+                KNNGestureController.FromProperties("left",
+                ActionCommand.allCommandMask(), this, leftBus,
+                "dtw_gestures_left.properties");
     }
     
     private void updateCommandChart() {

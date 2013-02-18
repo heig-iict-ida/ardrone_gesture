@@ -34,6 +34,7 @@ public class TimeseriesChartPanel extends ChartPanel {
     private JFreeChart chart;
     
     private int counter = Integer.MIN_VALUE;
+    public final String title;
     
     // Return paints associated to serie id. This is used to ensure that
     // commands are plotted with the same color across the application
@@ -51,6 +52,8 @@ public class TimeseriesChartPanel extends ChartPanel {
                                 long numVisible) {
         super(null);
         initComponents();
+        
+        this.title = title;
         
         TimeSeriesCollection accelCol = new TimeSeriesCollection();
         for (Map.Entry<Integer, String> e : seriesIDToName.entrySet()) {
