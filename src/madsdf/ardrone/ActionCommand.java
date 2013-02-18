@@ -1,10 +1,7 @@
 package madsdf.ardrone;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
-import java.awt.Paint;
-import org.jfree.chart.ChartColor;
 
 /**
  * Enumeration class describing a possible action for the drone
