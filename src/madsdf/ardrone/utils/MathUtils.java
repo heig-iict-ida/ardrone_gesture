@@ -55,4 +55,15 @@ public class MathUtils {
             m.put(key, v + incr);
         }
     }
+    
+        // Increment the value of 'key' in 'map' by 'incr'. Create new entry
+    // if needed
+    public static <K> void mapIncr(Map<K, Long> m, K key, long incr) {
+        Long v = m.get(key);
+        if (v == null) {
+            m.put(key, incr);
+        } else {
+            m.put(key, v + incr);
+        }
+    }
 }
