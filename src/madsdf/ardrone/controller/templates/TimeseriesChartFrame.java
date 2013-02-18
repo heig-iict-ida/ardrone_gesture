@@ -31,7 +31,7 @@ public class TimeseriesChartFrame extends javax.swing.JFrame {
         this.setTitle(title);
     }
     
-    public void addToChart(Map<Integer, Float> data) {
+    public void addToChart(ImmutableMap<Integer, Float> data) {
         TimeseriesChartPanel pan = (TimeseriesChartPanel)chartPanel;
         pan.addToChart(data);
     }

@@ -1,6 +1,7 @@
 package madsdf.ardrone.utils;
 
 import java.util.Arrays;
+import java.util.Map;
 
 public class MathUtils {
     public static float median(float[] array) {
@@ -42,5 +43,16 @@ public class MathUtils {
             out[i] = median(Arrays.copyOfRange(serie, i, to), true);
         }
         return out;
+    }
+
+    // Increment the value of 'key' in 'map' by 'incr'. Create new entry
+    // if needed
+    public static <K> void mapIncr(Map<K, Float> m, K key, float incr) {
+        Float v = m.get(key);
+        if (v == null) {
+            m.put(key, incr);
+        } else {
+            m.put(key, v + incr);
+        }
     }
 }

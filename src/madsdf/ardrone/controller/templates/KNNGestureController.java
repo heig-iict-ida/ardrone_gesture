@@ -236,33 +236,32 @@ public class KNNGestureController extends DroneController {
         return (float) Math.sqrt(stddev);
     }
     
-    public Map<Integer, Float> toIntegerMap(Map<ActionCommand, Float> m) {
-        Map<Integer, Float> outM = Maps.newHashMap();
+    public ImmutableMap<Integer, Float> toIntegerMap(ImmutableMap<ActionCommand, Float> m) {
+        ImmutableMap.Builder<Integer, Float> outM = ImmutableMap.builder();
         for (Entry<ActionCommand, Float> e : m.entrySet()) {
             outM.put(e.getKey().ordinal(), e.getValue());
         }
-        return outM;
+        return outM.build();
     }
     
     private void matchWindow(float[][] windowAccel) {
         KNN knn = KNN.classify(KNN_K, windowAccel, gestureTemplates);
         
-        Map<Integer, Float> cmdDists = Maps.newHashMap();
+        ImmutableMap.Builder<Integer, Float> cmdDists = ImmutableMap.builder();
         for (ActionCommand command: knn.distsPerClass.keySet()) {
             Collection<Float> dists = knn.distsPerClass.get(command);
             //final float dist = Collections.min(dists);
             final float dist = average(dists);
             cmdDists.put(command.ordinal(), dist);
         }
-        updateChart(distChartPanel, cmdDists);
+        updateChart(distChartPanel, cmdDists.build());
         
         //System.out.println(_tmp);
         updateChart(knnChartPanel, toIntegerMap(knn.votesPerClass));
         
         float meanStddev = (stddev(windowAccel[0]) + stddev(windowAccel[1])
                 + stddev(windowAccel[2])) / 3.0f;
-        Map<Integer, Float> chartData = Maps.newHashMap();
-        chartData.put(0, meanStddev);
+        ImmutableMap<Integer, Float> chartData = ImmutableMap.of(0, meanStddev);
         updateChart(stdChartPanel, chartData);
         
         // Finally, decide if we detected something
@@ -270,7 +269,7 @@ public class KNNGestureController extends DroneController {
     }
     
     private static void updateChart(final TimeseriesChartPanel panel,
-                                    final Map<Integer, Float> data) {
+                                    final ImmutableMap<Integer, Float> data) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 panel.addToChart(data);
@@ -352,6 +351,9 @@ public class KNNGestureController extends DroneController {
             // have :
             // - detected the same class
             // - fulfilled all conditions
+            if (prevBest == null) {
+                return ActionCommand.NOTHING;
+            }
             return prevBest;
         }
     }
@@ -359,13 +361,16 @@ public class KNNGestureController extends DroneController {
     
     private void decideGesture(final KNN knn,
                                float stddev) {
-        Map<ActionCommand, Float> detections = Maps.newHashMap();
+        final ActionCommand detected = gestureDetector.decide();
+        ImmutableMap.Builder<ActionCommand, Float> _detections = ImmutableMap.builder();
         for (ActionCommand command: gestureTemplates.keySet()) {
-            detections.put(command, 0.0f);
+            if (detected.equals(command)) {
+                _detections.put(command, 1.0f);
+            } else {
+                _detections.put(command, 0.0f);
+            }
         }
-        
-        gestureDetector.addVotation(knn, stddev);
-        detections.put(gestureDetector.decide(), 1.0f);
+        ImmutableMap<ActionCommand, Float> detections = _detections.build();
         
         /*if (stddev > 2000) {
             // Sort by number of votes
@@ -412,7 +417,10 @@ public class KNNGestureController extends DroneController {
     private void sendToDrone(Map<ActionCommand, Float> detections) {
         for (Entry<ActionCommand, Float> e : detections.entrySet()) {
             final boolean v = e.getValue() > 0;
-            this.updateDroneAction(e.getKey(), v);
+            if (e.getValue() > 0) {
+                this.enableAction(e.getKey(), 200);
+            }
+            //this.updateDroneAction(e.getKey(), v);
         }
     }
     

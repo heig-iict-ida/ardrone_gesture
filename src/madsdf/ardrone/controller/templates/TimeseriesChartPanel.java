@@ -19,7 +19,9 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.data.time.DynamicTimeSeriesCollection;
 import org.jfree.data.time.FixedMillisecond;
+import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
@@ -36,6 +38,8 @@ public class TimeseriesChartPanel extends ChartPanel {
     private int counter = Integer.MIN_VALUE;
     public final String title;
     
+    private long lastAdd = System.currentTimeMillis();
+    
     // Return paints associated to serie id. This is used to ensure that
     // commands are plotted with the same color across the application
     private static Paint[] paints = ChartColor.createDefaultPaintArray();
@@ -49,7 +53,7 @@ public class TimeseriesChartPanel extends ChartPanel {
     public TimeseriesChartPanel(String title,
                                 String xAxisLabel, String yAxisLabel,
                                 ImmutableSortedMap<Integer, String> seriesIDToName,
-                                long numVisible) {
+                                int numVisible) {
         super(null);
         initComponents();
         
@@ -84,12 +88,12 @@ public class TimeseriesChartPanel extends ChartPanel {
             r.setSeriesPaint(userIDToChartID.get(v), paints[v]);
         }
         
-        ValueAxis axisAcc = plot.getDomainAxis();
-        axisAcc.setTickMarksVisible(true);
-        axisAcc.setMinorTickCount(10);
-        axisAcc.setAutoRange(true);
-        axisAcc.setFixedAutoRange(numVisible);
-        axisAcc.setTickLabelsVisible(true);
+        ValueAxis timeAxis = plot.getDomainAxis();
+        timeAxis.setTickMarksVisible(true);
+        timeAxis.setMinorTickCount(10);
+        timeAxis.setAutoRange(true);
+        timeAxis.setFixedAutoRange(numVisible);
+        timeAxis.setTickLabelsVisible(true);
         
         this.setChart(chart);
     }
@@ -99,24 +103,31 @@ public class TimeseriesChartPanel extends ChartPanel {
     // undefined behaviour (due to the counter variable)
         
     // Add a set of values to the chart. One value for each serie
-    public void addToChart(Map<Integer, Float> data) {
+    public void addToChart(ImmutableMap<Integer, Float> data) {
+        final long now = System.currentTimeMillis();
+        final boolean notify = (now - lastAdd) > 200;
+        if (notify) {
+            lastAdd = now;
+        }
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            series.get(e.getKey()).addOrUpdate(new FixedMillisecond(counter), e.getValue());
+            //series.get(e.getKey()).addOrUpdate(new FixedMillisecond(counter), e.getValue());
+            series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue(), notify);
         }
         counter++;
     }
     
     // Add a set of values to the chart. One value for each serie
-    public void addToChart(long timestampMS, Map<Integer, Float> data) {
+    /*public void addToChart(long timestampMS, ImmutableMap<Integer, Float> data) {
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
             series.get(e.getKey()).addOrUpdate(new FixedMillisecond(timestampMS), e.getValue());
+            //series.get(e.getKey()).add(new FixedMillisecond(timestampMS), e.getValue());
         }
-    }
+    }*/
     
     // Add a unique value with a specific timestamp to the cart
-    public void addToChart(long timestampMS, int serieID, Float value) {
+    /*public void addToChart(long timestampMS, int serieID, Float value) {
         series.get(serieID).addOrUpdate(new FixedMillisecond(timestampMS), value);
-    }
+    }*/
 
     /**
      * This method is called from within the constructor to initialize the form.

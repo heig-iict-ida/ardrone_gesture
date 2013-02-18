@@ -24,20 +24,7 @@ import madsdf.ardrone.utils.DTW;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
 import madsdf.ardrone.utils.MathUtils;
 
-public class KNN {
-    // Increment the value of 'key' in 'map' by 'incr'. Create new entry
-    // if needed 
-    private static <K> void mapIncr (Map<K, Float> m, K key, float incr) {
-        Float v = m.get(key);
-        // TODO: If we initialize our maps using zeroInit, we should never have
-        // null => Add precondition ?
-        if (v == null) {
-            m.put(key, incr);
-        } else {
-            m.put(key, v + incr);
-        }
-    }
-    
+public class KNN {    
     private static <K> void zeroInit(Map<K, Float> m, Iterable<K> iter) {
         for (K key: iter) {
             m.put(key, 0.0f);
@@ -121,7 +108,7 @@ public class KNN {
         for (Entry<Float, GestureTemplate> e : closest) {
             final float dist = e.getKey();
             final GestureTemplate g = e.getValue();
-            mapIncr(_votesPerClass, g.command, 1);
+            MathUtils.mapIncr(_votesPerClass, g.command, 1);
         }
         
         this.votesPerClass = valueSortedMap(_votesPerClass);

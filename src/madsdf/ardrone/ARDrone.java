@@ -18,6 +18,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicProgressBarUI;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 import static com.google.common.base.Preconditions.*;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import java.util.Map;
@@ -287,9 +288,9 @@ public class ARDrone extends JFrame implements Runnable {
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
-        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
-        leftShimmer.setVisible(true);
+        //leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
 
         EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
@@ -306,21 +307,22 @@ public class ARDrone extends JFrame implements Runnable {
                 KNNGestureController.FromProperties("right",
                 ActionCommand.allCommandMask(), this, rightBus,
                 "dtw_gestures_right.properties");
-        KNNGestureController leftGestureController =
+        /*KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
-                "dtw_gestures_left.properties");
+                "dtw_gestures_left.properties");*/
+        System.out.println("Running..");
     }
     
     private void updateCommandChart() {
         SwingUtilities.invokeLater(new Runnable(){
             public void run() {
-                final Map<Integer, Float> data = Maps.newHashMap();
+                final ImmutableMap.Builder<Integer, Float> data = ImmutableMap.builder();
                 for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
                     final float v = e.getValue() ? 1 : 0;
                     data.put(e.getKey().ordinal(), v);
                 }
-                commandPanel.addToChart(System.currentTimeMillis(), data);
+                commandPanel.addToChart(/*System.currentTimeMillis(),*/ data.build());
             }
         });
     }
@@ -590,7 +592,7 @@ public class ARDrone extends JFrame implements Runnable {
      * @param startAction true to send the command and false to stop sending the
      * command
      */
-    public void updateActionMap(ActionCommand command, boolean startAction) {
+    public synchronized void updateActionMap(ActionCommand command, boolean startAction) {
         // Add this single action to chart so we are sure the chart updating
         // thread doesn't miss it
         /*final float v = startAction ? 1 : 0;
