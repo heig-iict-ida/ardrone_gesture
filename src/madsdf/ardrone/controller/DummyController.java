@@ -12,7 +12,7 @@ import madsdf.ardrone.ARDrone;
 import madsdf.ardrone.ActionCommand;
 
 /**
- * Testing controller
+ * Testing controller. Can be used to test DroneController timing
  */
 public class DummyController extends DroneController {
     private final Random random = new Random();

@@ -109,6 +109,7 @@ public class KNNGestureController extends DroneController {
     private GestureDetector gestureDetector = new GestureDetector();
     
     private static final int KNN_K = 3;
+    private static final long COMMAND_DURATION = 500;
     
     private final boolean calibrated;
     
@@ -433,7 +434,7 @@ public class KNNGestureController extends DroneController {
         for (Entry<ActionCommand, Float> e : detections.entrySet()) {
             final boolean v = e.getValue() > 0;
             if (e.getValue() > 0) {
-                this.enableAction(e.getKey(), 500);
+                this.enableAction(e.getKey(), COMMAND_DURATION);
             }
             //this.updateDroneAction(e.getKey(), v);
         }

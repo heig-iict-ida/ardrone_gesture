@@ -311,8 +311,8 @@ public class ARDrone extends JFrame implements Runnable {
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
-        DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
-        /*
+        //DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
+        
         leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
         leftShimmer.setVisible(true);
@@ -335,7 +335,7 @@ public class ARDrone extends JFrame implements Runnable {
         KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
-                "dtw_gestures_left.properties");*/
+                "dtw_gestures_left.properties");
         System.out.println("Running..");
     }
     
