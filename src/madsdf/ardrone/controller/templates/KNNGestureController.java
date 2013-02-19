@@ -433,7 +433,7 @@ public class KNNGestureController extends DroneController {
         for (Entry<ActionCommand, Float> e : detections.entrySet()) {
             final boolean v = e.getValue() > 0;
             if (e.getValue() > 0) {
-                this.enableAction(e.getKey(), 200);
+                this.enableAction(e.getKey(), 500);
             }
             //this.updateDroneAction(e.getKey(), v);
         }

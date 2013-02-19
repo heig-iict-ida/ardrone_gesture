@@ -21,8 +21,11 @@ import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Map;
 import java.util.Map.Entry;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import madsdf.ardrone.controller.KeyboardController;
@@ -119,6 +122,7 @@ public class ARDrone extends JFrame implements Runnable {
     // The battery progress bar
     JProgressBar batteryLevel;
     JTextArea logArea;
+    JButton resetButton;
     TimeseriesChartPanel commandPanel;
     // The properties objects
     private Properties configDrone;
@@ -195,20 +199,38 @@ public class ARDrone extends JFrame implements Runnable {
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("parrot_icon.png")));
         videoPanel = new VideoPanel();
         
+        JPanel northPanel = new JPanel();
+        
+        this.getContentPane().add(northPanel, BorderLayout.NORTH);
+        
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new GridLayout(1, 2));
+        this.getContentPane().add(centerPanel, BorderLayout.CENTER);
+        
+        
         JPanel southPanel = new JPanel();
-        southPanel.setLayout(new GridLayout(1, 2));
+        southPanel.setLayout(new BorderLayout());
         this.getContentPane().add(southPanel, BorderLayout.SOUTH);
+        
+        resetButton = new JButton("Reset");
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                resetEmergency();
+            }
+            
+        });
+        northPanel.add(resetButton);
 
         logArea = new JTextArea();
-        logArea.setPreferredSize(new Dimension(0, 300));
         logArea.setEnabled(false);
-        southPanel.add(logArea);
+        centerPanel.add(logArea);
         
         commandPanel = new TimeseriesChartPanel("Drone commands",
                 "Time (samples)", "Activation", ActionCommand.ordinalToName, 500,
                 0, 1);
-        commandPanel.setPreferredSize(new Dimension(0, 300));
-        southPanel.add(commandPanel);
+        commandPanel.setPreferredSize(new Dimension(200, 200));
+        southPanel.add(commandPanel, BorderLayout.CENTER);
         
         new Thread(){
             @Override
@@ -234,7 +256,7 @@ public class ARDrone extends JFrame implements Runnable {
         }
         // Define the frame
         videoPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-        this.getContentPane().add(videoPanel, BorderLayout.CENTER);
+        centerPanel.add(videoPanel);
 
         // Define the battery progress bar
         batteryLevel = new JProgressBar(JProgressBar.HORIZONTAL, 0, 100);
@@ -283,7 +305,7 @@ public class ARDrone extends JFrame implements Runnable {
         commandSender = new Thread(this);
 
         // Launch the configuration of the drone
-        //startConfig();
+        startConfig();
 
         // Create the keyboard controller
         keyboardController = new KeyboardController(
@@ -398,6 +420,14 @@ public class ARDrone extends JFrame implements Runnable {
             System.err.println("ARDrone.loadProperties: " + ex);
         }
     }
+    
+    private void resetEmergency() {
+        // Reset emergency state
+        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
+
+        // Reset the command watchdog just in case
+        sendATCmd("AT*COMWDG=" + getSeq());
+    }
 
     /**
      * Configure the drone and start the control sender, the navigation data
@@ -412,11 +442,7 @@ public class ARDrone extends JFrame implements Runnable {
         sendATCmd("AT*PMODE=" + getSeq() + ",2");
         sendATCmd("AT*MISC=" + getSeq() + ",2,20,2000,3000");
 
-        // Reset emergency state
-        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
-
-        // Reset the command watchdog just in case
-        sendATCmd("AT*COMWDG=" + getSeq());
+        resetEmergency();
 
         // Set the altitude max
         sendATCmd("AT*CONFIG=" + getSeq() + ",\"control:altitude_max\",\""
