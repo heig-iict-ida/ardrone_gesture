@@ -205,7 +205,7 @@ public class ARDrone extends JFrame implements Runnable {
         southPanel.add(logArea);
         
         commandPanel = new TimeseriesChartPanel("Drone commands",
-                "Time (samples)", "Activation", ActionCommand.ordinalToName, 200,
+                "Time (samples)", "Activation", ActionCommand.ordinalToName, 500,
                 0, 1);
         commandPanel.setPreferredSize(new Dimension(0, 300));
         southPanel.add(commandPanel);

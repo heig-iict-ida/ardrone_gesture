@@ -293,6 +293,14 @@ public class KNNGestureController extends DroneController {
         private final static int HISTORY_SIZE = 5;
         private Deque<Entry> history = new ArrayDeque<>();
         
+        // Store the previous (non-nothing) action we decided. This is so
+        // we can enforce a delay of INTER_ACTION_DELAY between subsequent
+        // actions
+        // can be null if no action has been decided yet
+        //private ActionCommand prevDecided = null;
+        private long prevTimestampMS = System.currentTimeMillis();
+        private long INTER_ACTION_DELAY = 1000;
+        
         public void addVotation(KNN knn, float stddev) {
             history.addLast(new Entry(knn, stddev));
             while (history.size() > HISTORY_SIZE) {
@@ -350,7 +358,17 @@ public class KNNGestureController extends DroneController {
             if (prevBest == null) {
                 return ActionCommand.NOTHING;
             }
-            return prevBest;
+            
+            // Check against INTER_ACTION_DELAY
+            final long now = System.currentTimeMillis();
+            if (prevBest != ActionCommand.NOTHING &&
+                (now - prevTimestampMS) > INTER_ACTION_DELAY) {
+                prevTimestampMS = now;
+                return prevBest;
+            } else {
+                System.out.println("Prevented by INTER_ACTION_DELAY");
+                return ActionCommand.NOTHING;
+            }
         }
     }
     

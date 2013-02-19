@@ -71,8 +71,10 @@ public class TimeseriesChartPanel extends Chart2D {
         IAxis yAxis = this.getAxisY();
         yAxis.setAxisTitle(new AxisTitle(yAxisLabel));
         yAxis.setRangePolicy(new ChartsDrawer.RangePolicyMaxSeen(min, max));
+        //yAxis.setVisible(false);
         IAxis xAxis = this.getAxisX();
         xAxis.setAxisTitle(new AxisTitle(xAxisLabel));
+        xAxis.setVisible(false);
     }
     
     // There are different way to update the chart. Note that you should
