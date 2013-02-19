@@ -25,9 +25,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import madsdf.ardrone.controller.DummyController;
 import madsdf.ardrone.controller.KeyboardController;
 import madsdf.ardrone.controller.templates.TimeseriesChartPanel;
 import madsdf.shimmer.event.Globals;
@@ -227,22 +230,17 @@ public class ARDrone extends JFrame implements Runnable {
         centerPanel.add(logArea);
         
         commandPanel = new TimeseriesChartPanel("Drone commands",
-                "Time (samples)", "Activation", ActionCommand.ordinalToName, 500,
+                "Time (samples)", "Activation", ActionCommand.ordinalToName, 100,
                 0, 1);
         commandPanel.setPreferredSize(new Dimension(200, 200));
         southPanel.add(commandPanel, BorderLayout.CENTER);
         
-        new Thread(){
+        new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                while (true) {
-                    updateCommandChart();
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException ex) {}
-                }
+                updateCommandChart();
             }
-        }.start();
+        }, 500, 100);
 
         // Discover the bluetooth devices if needed
       /*if(configSensors != null && configSensors.length > 0)
@@ -267,10 +265,12 @@ public class ARDrone extends JFrame implements Runnable {
         batteryLevel.setPreferredSize(new Dimension(52, 16));
         batteryLevel.setFont(new java.awt.Font("Tahoma", Font.BOLD, 11));
         batteryLevel.setUI(new BasicProgressBarUI() {
+            @Override
             protected Color getSelectionBackground() {
                 return Color.BLACK;
             }
 
+            @Override
             protected Color getSelectionForeground() {
                 return Color.BLACK;
             }
@@ -301,7 +301,7 @@ public class ARDrone extends JFrame implements Runnable {
         });
 
         // Create the thread and the list to send the commands
-        comList = new ConcurrentLinkedQueue<String>();
+        comList = new ConcurrentLinkedQueue<>();
         commandSender = new Thread(this);
 
         // Launch the configuration of the drone
@@ -311,6 +311,8 @@ public class ARDrone extends JFrame implements Runnable {
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
 
+        DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
+        /*
         leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
         leftShimmer.setVisible(true);
@@ -333,12 +335,13 @@ public class ARDrone extends JFrame implements Runnable {
         KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
-                "dtw_gestures_left.properties");
+                "dtw_gestures_left.properties");*/
         System.out.println("Running..");
     }
     
     private void updateCommandChart() {
         SwingUtilities.invokeLater(new Runnable(){
+            @Override
             public void run() {
                 final ImmutableMap.Builder<Integer, Float> data = ImmutableMap.builder();
                 for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
@@ -367,7 +370,6 @@ public class ARDrone extends JFrame implements Runnable {
             }
 
             try {
-
                 // Verify there is a command to send
                 if (cmd.length() > 0) {
 
@@ -572,8 +574,11 @@ public class ARDrone extends JFrame implements Runnable {
      * Make the drone take off if the condition are filled
      */
     public void takeOff() {
-        // If the drone is already flying cancel the command
-        if (getFlyingState() == FlyingState.FLYING || getFlyingState() == FlyingState.LANDING || navDataBootStrap || emergency) {
+        // If the drone is already flying cancel the command        
+        if (getFlyingState() == FlyingState.FLYING ||
+            getFlyingState() == FlyingState.LANDING ||
+            navDataBootStrap ||
+            emergency) {
             commandState.put(ActionCommand.TAKEOFF, false);
 
             // If the drone is in emergency state, reset the flag
@@ -685,7 +690,8 @@ public class ARDrone extends JFrame implements Runnable {
             // Try to take off
             case TAKEOFF:
                 if (startAction) {
-                    commandState.put(command, true);
+                    commandState.put(ActionCommand.TAKEOFF, true);
+                    commandState.put(ActionCommand.LAND, false);
                     takeOff();
                 }
                 break;
@@ -694,7 +700,7 @@ public class ARDrone extends JFrame implements Runnable {
             case LAND:
                 if (startAction) {
                     commandState.put(ActionCommand.LAND, true);
-                    commandState.put(ActionCommand.TAKEOFF, true);
+                    commandState.put(ActionCommand.TAKEOFF, false);
                     land();
                 }
                 break;

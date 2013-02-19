@@ -3,8 +3,16 @@ package madsdf.ardrone.controller;
 import madsdf.ardrone.ActionCommand;
 import madsdf.ardrone.ARDrone;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * The keyboard controller for control of the drone. This class implement a
@@ -27,55 +35,43 @@ import java.awt.event.KeyListener;
  * @author Gregoire Aubert
  * @version 1.0
  */
-public class KeyboardController extends DroneController implements KeyListener {
-
+public class KeyboardController extends DroneController implements KeyEventDispatcher {
+    // Swing on Linux suffer from a bug where keyReleased is called right after
+    // keyPressed even if the key is still pressed
+    // Could implement timer workaround described there :
+    // http://stackoverflow.com/questions/1736828/how-to-stop-repeated-keypressed-keyreleased-events-in-swing
+    
+    
     /**
      * Constructor
      *
      * @param arDrone the controlled drone
      */
-    public KeyboardController(ImmutableSet<ActionCommand> actionMask, ARDrone drone) {
+    public KeyboardController(ImmutableSet<ActionCommand> actionMask,
+                              ARDrone drone) {
         super(actionMask, drone);
-        drone.addKeyListener(this);
+        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(this);
     }
-
-    /**
-     * Listen to the typed keys, not used.
-     *
-     * @param e the key event who called the method
-     */
-    public void keyTyped(KeyEvent e) {
+    
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent ke) {
+        if (ke.getID() == KeyEvent.KEY_PRESSED) {
+            this.updateDroneAction(actionFromKeyCode(ke.getKeyCode()), true);
+        } else if (ke.getID() == KeyEvent.KEY_RELEASED) {
+            this.updateDroneAction(actionFromKeyCode(ke.getKeyCode()), false);
+        }
+        // TODO: We should return true if an ActionCommand was detected
+        return false;
     }
-
-    /**
-     * Listen to the pressed keys
-     *
-     * @param e the key event who called the method
-     */
-    public void keyPressed(KeyEvent e) {
-        // Convert the key in a ActionCommand and update the drone action map
-        this.updateDroneAction(actionFromKeyEvent(e), true);
-    }
-
-    /**
-     * Listen to the released keys
-     *
-     * @param e the key event who called the method
-     */
-    public void keyReleased(KeyEvent e) {
-        // Update the action map with the key released
-        this.updateDroneAction(actionFromKeyEvent(e), false);
-    }
-
     /**
      * Convert a KeyEvent in an ActionCommand
      *
      * @param e the KeyEvent to convert
      * @return the corresponding ActionCommand
      */
-    public ActionCommand actionFromKeyEvent(KeyEvent e) {
-        switch (e.getKeyCode()) {
-
+    public static ActionCommand actionFromKeyCode(int keycode) {
+        switch (keycode) {
             // Speed control
             case KeyEvent.VK_1:
             case KeyEvent.VK_2:
@@ -86,7 +82,7 @@ public class KeyboardController extends DroneController implements KeyListener {
             case KeyEvent.VK_7:
             case KeyEvent.VK_8:
             case KeyEvent.VK_9:
-                ActionCommand.SPEED.setVal(e.getKeyCode() - KeyEvent.VK_1 + 1);
+                ActionCommand.SPEED.setVal(keycode - KeyEvent.VK_1 + 1);
                 return ActionCommand.SPEED;
 
             // Switch video channel
