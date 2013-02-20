@@ -106,6 +106,8 @@ public class ARDrone extends JFrame implements Runnable {
     private DatagramSocket atSocket;
     // Drone speed
     private float speed = CONFIG_SPEED;
+    // Speed multiplier. Can be used to modulate speed
+    private float speedMultiplier = 1.0f;
     // Time between two commands
     private int cmdInterval = CONFIG_INTERVAL;
     // Drone video chanel
@@ -376,7 +378,7 @@ public class ARDrone extends JFrame implements Runnable {
                 commandChart.addToChart(/*System.currentTimeMillis(),*/ data.build());
                 
                 // Speed
-                speedChart.addToChart(ImmutableMap.of(0, getSpeed()));
+                speedChart.addToChart(ImmutableMap.of(0, getFinalSpeed()));
             }
         });
     }
@@ -812,15 +814,19 @@ public class ARDrone extends JFrame implements Runnable {
             this.speed = (float) speed;
 
             // Print the speed
-            System.out.println("Speed: " + getSpeed());
+            System.out.println("Speed: " + getFinalSpeed());
         }
+    }
+    
+    public void setSpeedMultiplier(double multiplier) {
+        speedMultiplier = (float)multiplier;
     }
 
     /**
      * @return the actual speed
      */
-    public float getSpeed() {
-        return speed;
+    public float getFinalSpeed() {
+        return speedMultiplier * speed;
     }
 
     /**

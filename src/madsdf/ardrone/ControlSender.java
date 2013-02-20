@@ -72,16 +72,16 @@ public class ControlSender extends Thread {
                     // Send the hovering command
                     myARDrone.sendPCMD(0, 0, 0, 0, 0);
                 } else {
-                    roll = myARDrone.getSpeed() * (+bToI(myARDrone.isActionRight())
+                    roll = myARDrone.getFinalSpeed() * (+bToI(myARDrone.isActionRight())
                             - bToI(myARDrone.isActionLeft()));
 
-                    pitch = myARDrone.getSpeed() * (bToI(myARDrone.isActionBackward())
+                    pitch = myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionBackward())
                             - bToI(myARDrone.isActionForward()));
 
-                    gaz = myARDrone.getSpeed() * (bToI(myARDrone.isActionTop())
+                    gaz = myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionTop())
                             - bToI(myARDrone.isActionDown()));
 
-                    yaw = myARDrone.getSpeed() * (bToI(myARDrone.isActionRotateRight())
+                    yaw = myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionRotateRight())
                             - bToI(myARDrone.isActionRotateLeft()));
 
                     // Send the movement command

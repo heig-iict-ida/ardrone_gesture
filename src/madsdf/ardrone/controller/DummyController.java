@@ -18,7 +18,7 @@ public class DummyController extends DroneController {
     private final Random random = new Random();
     
     private final static int MIN_DURATION = 200;
-    private final static int MAX_DURATION = 3000;
+    private final static int MAX_DURATION = 1500;
     
     private final static int MIN_DELAY = 1000;
     private final static int MAX_DELAY = 2000;

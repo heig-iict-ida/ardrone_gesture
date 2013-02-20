@@ -37,6 +37,9 @@ public class DroneController {
     // For each action, contains remaining activation time in milliseconds
     private final long[] actionRemaining = new long[ActionCommand.values().length];
     
+    // Contains elapsed time since start of action. Used to filter speed
+    private final long[] actionElapsed = new long[ActionCommand.values().length];
+    
     /**
      * @param actionMask a set of ActionCommand which this controller is allowed
      * to send to the drone
@@ -45,6 +48,7 @@ public class DroneController {
         this.actionMask = actionMask;
         this.drone = adrone;
         Arrays.fill(actionRemaining, 0);
+        Arrays.fill(actionElapsed, 0);
         
         stopwatch.start();
     }
@@ -93,25 +97,47 @@ public class DroneController {
         }
     }
     
+    // Time (milliseconds) to go from 0 to full speed or full speed to 0
+    private final static long SPEED_EDGE_TIME = 300;
+    
+    private double computeSpeedMultiplier(long remaining, long elapsed) {
+        if (remaining < SPEED_EDGE_TIME) {
+            // Need to decrease
+            return (double)remaining / (double)SPEED_EDGE_TIME;
+        } else if (elapsed < SPEED_EDGE_TIME) {
+            return (double)elapsed / (double)SPEED_EDGE_TIME;
+        } else {
+            return 1.0;
+        }
+    }
+    
     @Subscribe
     public void onTick(TickMessage msg) {
         stopwatch.stop();
         final long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
         
         for (ActionCommand a : actionMask) {
-            long remaining = actionRemaining[a.ordinal()];
+            final int aidx = a.ordinal();
+            long remaining = actionRemaining[aidx];
             // If nothing has changed, don't re-update actionMap with false
             // This is to avoid conflict with another controller
             if (remaining == 0) {
+                actionElapsed[aidx] = 0;
                 continue;
             }
             
             remaining = Math.max(0, remaining - elapsed);
-            actionRemaining[a.ordinal()] = remaining;
+            actionRemaining[aidx] = remaining;
+            actionElapsed[aidx] += elapsed;
             if (remaining == 0) {
                 drone.updateActionMap(a, false);
             } else {
                 drone.updateActionMap(a, true);
+                
+                // Update speed
+                final double multiplier = computeSpeedMultiplier(remaining,
+                        actionElapsed[aidx]);
+                drone.setSpeedMultiplier(multiplier);
             }
         }
         
