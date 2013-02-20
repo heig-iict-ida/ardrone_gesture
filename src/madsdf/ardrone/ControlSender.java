@@ -3,6 +3,7 @@ package madsdf.ardrone;
 import com.google.common.eventbus.EventBus;
 import madsdf.ardrone.ARDrone;
 import madsdf.ardrone.controller.DroneController;
+import madsdf.ardrone.controller.templates.TimeseriesChartPanel;
 
 /**
  * The control sender is thread that read the drone action map at regular time
@@ -18,6 +19,8 @@ public class ControlSender extends Thread {
     // The drone
     private ARDrone myARDrone;
     private EventBus ebus;
+    
+    private TimeseriesChartPanel chartPanel;
 
     /**
      * Constructor
@@ -70,12 +73,19 @@ public class ControlSender extends Thread {
                             || myARDrone.isActionRotateRight()
                             || myARDrone.isActionTop())) {
                     // Send the hovering command
-                    myARDrone.sendPCMD(0, 0, 0, 0, 0);
+                    //myARDrone.sendPCMD(0, 0, 0, 0, 0);
+                    
+                    // Do the hovering ourselves and apply bias to fine-tune
+                    roll = -myARDrone.getLeftBias();
+                    pitch = -myARDrone.getForwardBias();
+                    myARDrone.sendPCMD(1, roll, pitch, 0, 0);
                 } else {
-                    roll = myARDrone.getFinalSpeed() * (+bToI(myARDrone.isActionRight())
+                    roll = -myARDrone.getLeftBias() +
+                           myARDrone.getFinalSpeed() * (+bToI(myARDrone.isActionRight())
                             - bToI(myARDrone.isActionLeft()));
 
-                    pitch = myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionBackward())
+                    pitch = -myARDrone.getForwardBias() + 
+                            myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionBackward())
                             - bToI(myARDrone.isActionForward()));
 
                     gaz = myARDrone.getFinalSpeed() * (bToI(myARDrone.isActionTop())

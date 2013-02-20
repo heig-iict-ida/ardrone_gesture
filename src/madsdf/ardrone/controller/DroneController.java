@@ -26,7 +26,7 @@ public class DroneController {
     public static class TickMessage {}
     
     private final ImmutableSet<ActionCommand> actionMask;
-    private final ARDrone drone;
+    protected final ARDrone drone;
     
     private final Timer commandTimer = new Timer();
     

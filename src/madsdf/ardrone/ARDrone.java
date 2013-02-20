@@ -29,7 +29,10 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import madsdf.ardrone.controller.DummyController;
 import madsdf.ardrone.controller.KeyboardController;
@@ -79,10 +82,14 @@ public class ARDrone extends JFrame implements Runnable {
     static final int NAVDATA_BATTERY = 24;
     static final int NAVDATA_ALTITUDE = 40;
     // AT*REF values
-    static final int AT_REF_TAKEOFF = 290718208;
+    /*static final int AT_REF_TAKEOFF = 290718208;
     static final int AT_REF_LANDING = 290717696;
     static final int AT_REF_EMERGENCY = 290717952;
-    static final int AT_REF_RESET = 290717696;
+    static final int AT_REF_RESET = 290717696;*/
+    static final int AT_REF_TAKEOFF = 1 << 9;
+    static final int AT_REF_LANDING = 0;
+    static final int AT_REF_EMERGENCY = 1 << 8;
+    static final int AT_REF_RESET = 0;
     // End line char
     static final String LF = "\r";
     // Default time between two commands
@@ -105,7 +112,7 @@ public class ARDrone extends JFrame implements Runnable {
     // Socket to send command to the drone
     private DatagramSocket atSocket;
     // Drone speed
-    private float speed = CONFIG_SPEED;
+    //private float speed = CONFIG_SPEED;
     // Speed multiplier. Can be used to modulate speed
     private float speedMultiplier = 1.0f;
     // Time between two commands
@@ -129,8 +136,12 @@ public class ARDrone extends JFrame implements Runnable {
     JProgressBar batteryLevel;
     JTextArea logArea;
     JButton resetButton;
+    JSlider forwardBiasSlider;
+    JSlider leftBiasSlider;
+    JSlider speedSlider;
     TimeseriesChartPanel commandChart;
     TimeseriesChartPanel speedChart;
+    TimeseriesChartPanel pcmdChart;
     // The properties objects
     private Properties configDrone;
     private final String leftShimmerID;
@@ -209,6 +220,7 @@ public class ARDrone extends JFrame implements Runnable {
         videoPanel = new VideoPanel();
         
         JPanel northPanel = new JPanel();
+        northPanel.setLayout(new GridLayout(4, 2));
         
         this.getContentPane().add(northPanel, BorderLayout.NORTH);
         
@@ -221,6 +233,7 @@ public class ARDrone extends JFrame implements Runnable {
         southPanel.setLayout(new GridBagLayout());
         this.getContentPane().add(southPanel, BorderLayout.SOUTH);
         
+        // Controls
         resetButton = new JButton("Reset");
         resetButton.addActionListener(new ActionListener() {
             @Override
@@ -229,7 +242,33 @@ public class ARDrone extends JFrame implements Runnable {
             }
             
         });
+        
+        northPanel.add(new JLabel("Reset"));
         northPanel.add(resetButton);
+        
+        northPanel.add(new JLabel("Forward bias %"));
+        forwardBiasSlider = new JSlider(JSlider.HORIZONTAL, -100, 100, 0);
+        forwardBiasSlider.setMajorTickSpacing(20);
+        forwardBiasSlider.setMinorTickSpacing(5);
+        forwardBiasSlider.setPaintLabels(true);
+        forwardBiasSlider.setPaintTicks(true);
+        northPanel.add(forwardBiasSlider);
+        
+        northPanel.add(new JLabel("Left bias %"));
+        leftBiasSlider = new JSlider(JSlider.HORIZONTAL, -100, 100, 0);
+        leftBiasSlider.setMajorTickSpacing(20);
+        leftBiasSlider.setMinorTickSpacing(5);
+        leftBiasSlider.setPaintLabels(true);
+        leftBiasSlider.setPaintTicks(true);
+        northPanel.add(leftBiasSlider);
+        
+        northPanel.add(new JLabel("Speed %"));
+        speedSlider = new JSlider(JSlider.HORIZONTAL, 0, 100, 20);
+        speedSlider.setMajorTickSpacing(10);
+        speedSlider.setMinorTickSpacing(5);
+        speedSlider.setPaintLabels(true);
+        speedSlider.setPaintTicks(true);
+        northPanel.add(speedSlider);
 
         logArea = new JTextArea();
         logArea.setEnabled(false);
@@ -253,6 +292,14 @@ public class ARDrone extends JFrame implements Runnable {
         speedChart.setPreferredSize(new Dimension(0, 150));
         c.gridy = 1;
         southPanel.add(speedChart, c);
+        
+        pcmdChart = new TimeseriesChartPanel("PCMD",
+                "Time (samples)", "Value", ImmutableSortedMap.of(0, "flag",
+                    1, "roll", 2, "pitch", 3, "gaz", 4, "yaw"),
+                100, 0, 1);
+        pcmdChart.setPreferredSize(new Dimension(0, 150));
+        c.gridy = 2;
+        southPanel.add(pcmdChart, c);
         
         new Timer().schedule(new TimerTask() {
             @Override
@@ -307,7 +354,7 @@ public class ARDrone extends JFrame implements Runnable {
             }
         });
         videoPanel.add(batteryLevel);
-        setSize(460, 430);
+        setSize(800, 600);
         setVisible(true);
 
         // Define the window closing action
@@ -439,7 +486,8 @@ public class ARDrone extends JFrame implements Runnable {
             // Set the start speed
             String sp = configDrone.getProperty("speed", "");
             checkState(!sp.isEmpty());
-            speed = Float.parseFloat(sp);
+            System.out.println("Ignoring speed property");
+            //speed = Float.parseFloat(sp);
 
             // Verify if the sensors property is set
             String leftSensor = configDrone.getProperty("left_sensor");
@@ -453,9 +501,14 @@ public class ARDrone extends JFrame implements Runnable {
         }
     }
     
+    // WARNING: Don't call this method when drone is flying, will cause crash
     private void resetEmergency() {
+        checkState(emergency,
+                   "Only call resetEmergency when drone is in emergency");
+        
         // Reset emergency state
         sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
+        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_EMERGENCY);
 
         // Reset the command watchdog just in case
         sendATCmd("AT*COMWDG=" + getSeq());
@@ -466,7 +519,6 @@ public class ARDrone extends JFrame implements Runnable {
      * thread, the video reader thread and the control sender thread.
      */
     private void startConfig() {
-
         // Launch the command sender thread
         commandSender.start();
 
@@ -474,7 +526,7 @@ public class ARDrone extends JFrame implements Runnable {
         sendATCmd("AT*PMODE=" + getSeq() + ",2");
         sendATCmd("AT*MISC=" + getSeq() + ",2,20,2000,3000");
 
-        resetEmergency();
+        //resetEmergency();
 
         // Set the altitude max
         sendATCmd("AT*CONFIG=" + getSeq() + ",\"control:altitude_max\",\""
@@ -521,16 +573,16 @@ public class ARDrone extends JFrame implements Runnable {
         sendATCmd("AT*FTRIM=" + getSeq());
 
         // Reset emergency state
-        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
+        //sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
 
         // Send an hovering command
         sendPCMD(0, 0, 0, 0, 0);
 
         // Reset emergency state
-        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
+        //sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
 
         // Reset emergency state
-        sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
+        //sendATCmd("AT*REF=" + getSeq() + "," + AT_REF_RESET);
 
         // Wait a little before starting all thread
         try {
@@ -596,6 +648,8 @@ public class ARDrone extends JFrame implements Runnable {
                 + Float.floatToIntBits(pitch) + ","
                 + Float.floatToIntBits(gas) + ","
                 + Float.floatToIntBits(yaw));
+        pcmdChart.addToChart(ImmutableMap.of(0, (float)flag, 1, roll,
+                2, pitch, 3, gas, 4, yaw));
     }
 
     /**
@@ -811,7 +865,8 @@ public class ARDrone extends JFrame implements Runnable {
      */
     public void setSpeed(double speed, boolean set) {
         if (set) {
-            this.speed = (float) speed;
+            speedSlider.setValue((int)(100*speed));
+            //this.speed = (float) speed;
 
             // Print the speed
             System.out.println("Speed: " + getFinalSpeed());
@@ -821,12 +876,21 @@ public class ARDrone extends JFrame implements Runnable {
     public void setSpeedMultiplier(double multiplier) {
         speedMultiplier = (float)multiplier;
     }
+    
+    public float getForwardBias() {
+        return forwardBiasSlider.getValue() / 100.f;
+    }
+    
+    public float getLeftBias() {
+        return leftBiasSlider.getValue() / 100.f;
+    }
 
     /**
      * @return the actual speed
      */
     public float getFinalSpeed() {
-        return speedMultiplier * speed;
+        return speedMultiplier * (speedSlider.getValue() / 100.f);
+        //return speedMultiplier * speed;
     }
 
     /**
