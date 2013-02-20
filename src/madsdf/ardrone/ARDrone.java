@@ -19,6 +19,7 @@ import javax.swing.plaf.basic.BasicProgressBarUI;
 import madsdf.shimmer.gui.ShimmerMoveAnalyzerFrame;
 import static com.google.common.base.Preconditions.*;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import java.awt.event.ActionEvent;
@@ -126,7 +127,8 @@ public class ARDrone extends JFrame implements Runnable {
     JProgressBar batteryLevel;
     JTextArea logArea;
     JButton resetButton;
-    TimeseriesChartPanel commandPanel;
+    TimeseriesChartPanel commandChart;
+    TimeseriesChartPanel speedChart;
     // The properties objects
     private Properties configDrone;
     private final String leftShimmerID;
@@ -134,6 +136,8 @@ public class ARDrone extends JFrame implements Runnable {
     private ShimmerMoveAnalyzerFrame leftShimmer;
     private ShimmerMoveAnalyzerFrame rightShimmer;
     private final KeyboardController keyboardController;
+    
+    private final ControlSender controlSender;
 
     /**
      * Main process, create the drone controller.
@@ -212,7 +216,7 @@ public class ARDrone extends JFrame implements Runnable {
         
         
         JPanel southPanel = new JPanel();
-        southPanel.setLayout(new BorderLayout());
+        southPanel.setLayout(new GridBagLayout());
         this.getContentPane().add(southPanel, BorderLayout.SOUTH);
         
         resetButton = new JButton("Reset");
@@ -229,16 +233,29 @@ public class ARDrone extends JFrame implements Runnable {
         logArea.setEnabled(false);
         centerPanel.add(logArea);
         
-        commandPanel = new TimeseriesChartPanel("Drone commands",
-                "Time (samples)", "Activation", ActionCommand.ordinalToName, 100,
-                0, 1);
-        commandPanel.setPreferredSize(new Dimension(200, 200));
-        southPanel.add(commandPanel, BorderLayout.CENTER);
+        commandChart = new TimeseriesChartPanel("Drone commands",
+                "Time (samples)", "Activation", ActionCommand.ordinalToName,
+                100, 0, 1);
+        commandChart.setPreferredSize(new Dimension(0, 150));
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weighty = 0.5;
+        c.weightx = 1;
+        southPanel.add(commandChart, c);
+        
+        speedChart = new TimeseriesChartPanel("Drone speed",
+                "Time (samples)", "Speed", ImmutableSortedMap.of(0, "Speed"),
+                100, 0, 1);
+        speedChart.setPreferredSize(new Dimension(0, 150));
+        c.gridy = 1;
+        southPanel.add(speedChart, c);
         
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                updateCommandChart();
+                updateCharts();
             }
         }, 500, 100);
 
@@ -304,16 +321,17 @@ public class ARDrone extends JFrame implements Runnable {
         comList = new ConcurrentLinkedQueue<>();
         commandSender = new Thread(this);
 
-        // Launch the configuration of the drone
-        startConfig();
-
         // Create the keyboard controller
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
-
-        //DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
         
-        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        EventBus controllerTickBus = new EventBus();
+        controlSender = new ControlSender(this, controllerTickBus);
+
+        DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
+        controllerTickBus.register(controller);
+        
+        /*leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
         leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
@@ -336,19 +354,29 @@ public class ARDrone extends JFrame implements Runnable {
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
                 "dtw_gestures_left.properties");
+        controllerTickBus.register(rightGestureController);
+        controllerTickBus.register(leftGestureController);*/
+        
+        // Launch the configuration of the drone
+        startConfig();
+        
         System.out.println("Running..");
     }
     
-    private void updateCommandChart() {
+    private void updateCharts() {
         SwingUtilities.invokeLater(new Runnable(){
             @Override
             public void run() {
+                // Commands map
                 final ImmutableMap.Builder<Integer, Float> data = ImmutableMap.builder();
                 for (Entry<ActionCommand, Boolean> e : commandState.entrySet()) {
                     final float v = e.getValue() ? 1 : 0;
                     data.put(e.getKey().ordinal(), v);
                 }
-                commandPanel.addToChart(/*System.currentTimeMillis(),*/ data.build());
+                commandChart.addToChart(/*System.currentTimeMillis(),*/ data.build());
+                
+                // Speed
+                speedChart.addToChart(ImmutableMap.of(0, getSpeed()));
             }
         });
     }
@@ -518,9 +546,7 @@ public class ARDrone extends JFrame implements Runnable {
         videoReader.start();
 
         // Launch the control sender thread
-        ControlSender controlThread = new ControlSender(this);
-        controlThread.start();
-
+        controlSender.start();
     }
 
     /**
@@ -629,7 +655,7 @@ public class ARDrone extends JFrame implements Runnable {
         // thread doesn't miss it
         /*final float v = startAction ? 1 : 0;
         commandPanel.addToChart(System.currentTimeMillis(), command.ordinal(), v);*/
-        updateCommandChart();
+        updateCharts();
         
         // TODO: We should do the same with ControlSender (make sure it doesn't
         // miss too short commands)

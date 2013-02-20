@@ -1,6 +1,8 @@
 package madsdf.ardrone;
 
+import com.google.common.eventbus.EventBus;
 import madsdf.ardrone.ARDrone;
+import madsdf.ardrone.controller.DroneController;
 
 /**
  * The control sender is thread that read the drone action map at regular time
@@ -15,14 +17,16 @@ public class ControlSender extends Thread {
 
     // The drone
     private ARDrone myARDrone;
+    private EventBus ebus;
 
     /**
      * Constructor
      *
      * @param myARDrone the drone
      */
-    public ControlSender(ARDrone myARDrone) {
+    public ControlSender(ARDrone myARDrone, EventBus ebus) {
         this.myARDrone = myARDrone;
+        this.ebus = ebus;
     }
 
     /**
@@ -42,6 +46,9 @@ public class ControlSender extends Thread {
 
         // Send commands each CONFIG_INTERVAL ms, to keep the connection alive
         while (!myARDrone.isExit()) {
+            // Let controllers think
+            ebus.post(new DroneController.TickMessage());
+            
             String status = "";
             // Verify if the drone is landing
             if (myARDrone.isActionLanding() || myARDrone.getFlyingState() == FlyingState.LANDING) {
