@@ -73,12 +73,12 @@ public class ControlSender extends Thread {
                             || myARDrone.isActionRotateRight()
                             || myARDrone.isActionTop())) {
                     // Send the hovering command
-                    //myARDrone.sendPCMD(0, 0, 0, 0, 0);
+                    myARDrone.sendPCMD(0, 0, 0, 0, 0);
                     
                     // Do the hovering ourselves and apply bias to fine-tune
-                    roll = -myARDrone.getLeftBias();
-                    pitch = -myARDrone.getForwardBias();
-                    myARDrone.sendPCMD(1, roll, pitch, 0, 0);
+                    /*roll = -myARDrone.getLeftBias();
+                    pitch = -myARDrone.getForwardBias();*/
+                    //myARDrone.sendPCMD(1, roll, pitch, 0, 0);
                 } else {
                     roll = -myARDrone.getLeftBias() +
                            myARDrone.getFinalSpeed() * (+bToI(myARDrone.isActionRight())
