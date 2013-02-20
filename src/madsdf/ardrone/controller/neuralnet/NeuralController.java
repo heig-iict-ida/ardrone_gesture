@@ -372,7 +372,7 @@ public class NeuralController extends DroneController {
             cmdString += cmd.name() + ", ";
 
             // Update the action map
-            this.updateDroneAction(cmd, true);
+            this.directUpdateDroneAction(cmd, true);
 
             // And update the command timer
             timeCommand.updateTimeCmd(cmd);

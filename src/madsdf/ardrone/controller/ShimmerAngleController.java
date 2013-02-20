@@ -63,7 +63,7 @@ public class ShimmerAngleController extends DroneController {
         SwingUtilities.invokeLater(new Runnable() {
          public void run() {
              for (Map.Entry<ActionCommand, Boolean> e : activeActions.entrySet()) {
-                 updateDroneAction(e.getKey(), e.getValue());
+                 directUpdateDroneAction(e.getKey(), e.getValue());
              }
          }
       });

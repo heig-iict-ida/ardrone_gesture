@@ -90,8 +90,7 @@ public class DroneController {
         }
     }*/
     
-    @Deprecated
-    public void updateDroneAction(ActionCommand cmd, boolean newState) {
+    public void directUpdateDroneAction(ActionCommand cmd, boolean newState) {
         if (actionMask.contains(cmd)) {
             drone.updateActionMap(cmd, newState);
         }
@@ -134,10 +133,12 @@ public class DroneController {
             } else {
                 drone.updateActionMap(a, true);
                 
-                // Update speed
-                final double multiplier = computeSpeedMultiplier(remaining,
-                        actionElapsed[aidx]);
-                drone.setSpeedMultiplier(multiplier);
+                if (a != ActionCommand.NOTHING) {
+                    // Update speed
+                    final double multiplier = computeSpeedMultiplier(remaining,
+                            actionElapsed[aidx]);
+                    drone.setSpeedMultiplier(multiplier);
+                }
             }
         }
         

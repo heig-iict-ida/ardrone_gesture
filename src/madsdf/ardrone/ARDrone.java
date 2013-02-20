@@ -330,10 +330,10 @@ public class ARDrone extends JFrame implements Runnable {
         EventBus controllerTickBus = new EventBus();
         controlSender = new ControlSender(this, controllerTickBus);
 
-        DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
-        controllerTickBus.register(controller);
+        /*DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
+        controllerTickBus.register(controller);*/
         
-        /*leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
         leftShimmer.setVisible(true);
         rightShimmer.setVisible(true);
@@ -357,7 +357,7 @@ public class ARDrone extends JFrame implements Runnable {
                 ActionCommand.allCommandMask(), this, leftBus,
                 "dtw_gestures_left.properties");
         controllerTickBus.register(rightGestureController);
-        controllerTickBus.register(leftGestureController);*/
+        controllerTickBus.register(leftGestureController);
         
         // Launch the configuration of the drone
         startConfig();

@@ -109,7 +109,7 @@ public class KNNGestureController extends DroneController {
     private GestureDetector gestureDetector = new GestureDetector();
     
     private static final int KNN_K = 3;
-    private static final long COMMAND_DURATION = 500;
+    private static final long COMMAND_DURATION = 800;
     
     private final boolean calibrated;
     

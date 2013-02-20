@@ -57,9 +57,9 @@ public class KeyboardController extends DroneController implements KeyEventDispa
     @Override
     public boolean dispatchKeyEvent(KeyEvent ke) {
         if (ke.getID() == KeyEvent.KEY_PRESSED) {
-            this.updateDroneAction(actionFromKeyCode(ke.getKeyCode()), true);
+            this.directUpdateDroneAction(actionFromKeyCode(ke.getKeyCode()), true);
         } else if (ke.getID() == KeyEvent.KEY_RELEASED) {
-            this.updateDroneAction(actionFromKeyCode(ke.getKeyCode()), false);
+            this.directUpdateDroneAction(actionFromKeyCode(ke.getKeyCode()), false);
         }
         // TODO: We should return true if an ActionCommand was detected
         return false;

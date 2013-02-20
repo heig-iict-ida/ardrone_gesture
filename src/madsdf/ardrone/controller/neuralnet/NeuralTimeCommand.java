@@ -75,7 +75,7 @@ public class NeuralTimeCommand extends Thread {
             // If the check number reach 0 the action is disabled and the drone
             // action map is updated
             if(val == 0) {
-                controller.updateDroneAction(actCmd, false);
+                controller.directUpdateDroneAction(actCmd, false);
             }
             actionMap.put(actCmd, val);
          }
