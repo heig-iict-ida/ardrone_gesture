@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import madsdf.ardrone.ARDrone;
 import madsdf.ardrone.ActionCommand;
-import madsdf.ardrone.utils.MathUtils;
+import madsdf.ardrone.utils.Utils;
 
 /**
  *

@@ -3,7 +3,17 @@ package madsdf.ardrone.utils;
 import java.util.Arrays;
 import java.util.Map;
 
-public class MathUtils {
+public class Utils {
+    /**
+     * Convert a boolean to an integer
+     *
+     * @param b the boolean value to convert
+     * @return the corresponding integer
+     */
+    public static int bToI(boolean b) {
+        return (b) ? 1 : 0;
+    }
+    
     public static float median(float[] array) {
         return median(array, false);
     }

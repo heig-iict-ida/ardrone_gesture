@@ -1,5 +1,6 @@
 package madsdf.ardrone;
 
+import com.google.common.eventbus.EventBus;
 import madsdf.ardrone.ARDrone;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -19,29 +20,57 @@ import madsdf.ardrone.video.BufferedVideoImage;
  * @version 1.0
  */
 public class VideoReader extends Thread {
+    public static class VideoFrameEvent {
+        public final int startX;
+        public final int startY;
+        public final int w;
+        public final int h;
+        public final int[] rgbArray;
+        public final int offset;
+        public final int scansize;
+        
+        public VideoFrameEvent(int startX, int startY, int w, int h,
+                int[] rgbArray, int offset, int scansize) {
+            this.startX = startX;
+            this.startY = startY;
+            this.w = w;
+            this.h = h;
+            this.rgbArray = rgbArray;
+            this.offset = offset;
+            this.scansize = scansize;
+        }
+    }
 
    // The drone sending the video
-   private ARDrone myARDrone;
+   private DroneClient drone;
    
    // The connection socket
    private DatagramSocket videoSocket;
+   
+   // Bus on which events are sent
+   private final EventBus ebus;
 
    /**
     * Constructor
     * @param myARDrone 
     */
-   public VideoReader(ARDrone myARDrone) {
-      this.myARDrone = myARDrone;
+   public VideoReader(DroneClient myARDrone, EventBus ebus) {
+      this.drone = myARDrone;
+      this.ebus = ebus;
       
       // Connect and configure the socket
       try {
-         videoSocket = new DatagramSocket(ARDrone.VIDEO_PORT);
+         videoSocket = new DatagramSocket(DroneClient.VIDEO_PORT);
          videoSocket.setSoTimeout(2000);
       }
       catch (SocketException ex) {
          System.err.println("VideoReader: " + ex);
       }
    }
+   
+    void disconnect() {
+        videoSocket.close();
+    }
 
    @Override
    public void run() {
@@ -49,15 +78,15 @@ public class VideoReader extends Thread {
 
          // Send the trigger flag to the drone udp port to start the video stream
          byte[] buffer = {0x01, 0x00, 0x00, 0x00};
-         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, myARDrone.getDroneAdr(), ARDrone.VIDEO_PORT);
+         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, drone.getDroneAddress(), DroneClient.VIDEO_PORT);
          videoSocket.send(packet);
-         myARDrone.sendATCmd("AT*CONFIG=" + myARDrone.getSeq() + ",\"general:video_enable\",\"TRUE\"");
+         drone.sendATCmd("AT*CONFIG=" + drone.incrSeq() + ",\"general:video_enable\",\"TRUE\"");
 
          // Stock the received data
          byte[] videoBuf = new byte[64000];
          DatagramPacket videoPacket = new DatagramPacket(videoBuf, videoBuf.length);
 
-         while (true) {
+         while (!videoSocket.isClosed()) {
             try {
                // Receive the video packet
                videoSocket.receive(videoPacket);
@@ -67,12 +96,10 @@ public class VideoReader extends Thread {
                BufferedVideoImage video = new BufferedVideoImage();
                video.addImageStream(videoByteBuf);
                
-               // Add the picture to the video frame
-               myARDrone.videoFrameReceived(0, 0, 
-                                            video.getWidth(),
+               ebus.post(new VideoFrameEvent(0, 0, video.getWidth(),
                                             video.getHeight(),
                                             video.getJavaPixelData(), 0,
-                                            video.getWidth());
+                                            video.getWidth()));
                //System.out.println("Video Received: " + videoPacket.getLength() + " bytes");
             }
             catch (SocketTimeoutException ex) {
@@ -87,5 +114,6 @@ public class VideoReader extends Thread {
       catch (IOException ex) {
          System.err.println("VideoReader.run: " + ex);
       }
+      System.out.println("videoSocket closed, terminating VideoReader thread");
    }
 }

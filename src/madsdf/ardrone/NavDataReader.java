@@ -1,5 +1,6 @@
 package madsdf.ardrone;
 
+import com.google.common.eventbus.EventBus;
 import madsdf.ardrone.ARDrone;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -53,8 +54,38 @@ import java.net.SocketTimeoutException;
  * @author Gregoire Aubert
  * @version 1.0
  */
-public class NavDataReader extends Thread
-{   
+public class NavDataReader extends Thread {
+    public static class NavDataEvent {
+        public final int seqOnDrone;
+        public final boolean watchdog;
+        public final FlyingState status;
+        public final int altitude;
+        public final int battery;
+        public final float velocity_x;
+        public final float velocity_y;
+        public final float velocity_z;
+        public final float pitch;
+        public final float roll;
+        public final float yaw;
+
+        public NavDataEvent(
+                int seqOnDrone, boolean watchdog, FlyingState status,
+                int altitude, int battery, float vx, float vy, float vz,
+                float pitch, float roll, float yaw) {
+            this.seqOnDrone = seqOnDrone;
+            this.watchdog = watchdog;
+            this.status = status;
+            this.altitude = altitude;
+            this.battery = battery;
+            this.velocity_x = vx;
+            this.velocity_y = vy;
+            this.velocity_z = vz;
+            this.pitch = pitch;
+            this.roll = roll;
+            this.yaw = yaw;
+        }
+    }
+    
    // Mask for the ARDrone state
    static final int COM_LOST_MASK = 1 << 13;
    static final int COM_BOOTSTRAP_MASK = 1 << 11;
@@ -68,27 +99,36 @@ public class NavDataReader extends Thread
    static final int RESTRICT_PRINT = 20;
 
    // The ARDrone
-   private ARDrone arDrone;
+   private DroneClient drone;
    
    // The communication socket
    private DatagramSocket navDataSocket;
+   
+   private final EventBus ebus;
 
    /**
     * Constructor
     * @param arDrone the drone sending the navigation data
     */
-   public NavDataReader(ARDrone arDrone){
-      this.arDrone = arDrone;
+   public NavDataReader(DroneClient arDrone,
+                        EventBus ebus){
+      this.drone = arDrone;
+      this.ebus = ebus;
       
       // Connect and configure the socket
       try {
-         navDataSocket = new DatagramSocket(ARDrone.NAVDATA_PORT);
+         navDataSocket = new DatagramSocket(DroneClient.NAVDATA_PORT);
          navDataSocket.setSoTimeout(3000);
       }
       catch (SocketException ex) {
          System.err.println("NavDataReader: " + ex);
       }
    }
+   
+   
+    void disconnect() {
+        navDataSocket.close();
+    }
 
    /**
      * Convert the byte array to an int starting from the given offset.
@@ -126,9 +166,9 @@ public class NavDataReader extends Thread
 
          // Send the trigger flag to the drone udp port to start the navdata stream
          byte[] buffer = {0x01, 0x00, 0x00, 0x00};
-         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, arDrone.getDroneAdr(), ARDrone.NAVDATA_PORT);
+         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, drone.getDroneAddress(), DroneClient.NAVDATA_PORT);
          navDataSocket.send(packet);
-         arDrone.sendATCmd("AT*CONFIG=" + arDrone.getSeq() + ",\"general:navdata_demo\",\"TRUE\"");
+         drone.sendATCmd("AT*CONFIG=" + drone.incrSeq() + ",\"general:navdata_demo\",\"TRUE\"");
          //myARDrone.sendATCmd("AT*CTRL=0");
          
          // Stock the received data
@@ -147,7 +187,7 @@ public class NavDataReader extends Thread
                vx, vy, vz;
          int offset, print = 0;
 
-         while(true) {
+         while(!navDataSocket.isClosed()) {
             try{
 
                navDataSocket.receive(navDataPacket);
@@ -180,10 +220,10 @@ public class NavDataReader extends Thread
                   // Verify that it is a demo option
                   if(option_tag == NAVDATA_DEMO_TAG && option_len > 0){
 
-                     arDrone.setNavDataBootStrap(false);
+                     drone.setNavDataBootStrap(false);
 
                      // Retrieve the flying state
-                     arDrone.setFlyingState(FlyingState.fromInt(byteArrayToInt(navDataBuf, offset) >> 16));
+                     drone.setFlyingState(FlyingState.fromInt(byteArrayToInt(navDataBuf, offset) >> 16));
                      offset += 4;
 
                      // Retrieve the battery %
@@ -220,14 +260,18 @@ public class NavDataReader extends Thread
                         System.out.println("bit mask : " + Integer.toBinaryString(bitStateMask)
                                         + " | sequence : " + seqOnDrone
                                         + " | watchdog : " + (bitStateMask & COM_WATCHDOG_MASK)
-                                        + " | status : " + arDrone.getFlyingState()
+                                        + " | status : " + drone.getFlyingState()
                                         + " | altitude : " + altitude + " mm"
                                         + " | battery : " + battery + " %"
                                         + " | speed : [" + vx + ", " + vy + ", " + vz + "]"
                                         + " | pitch,roll,yaw : [" + pitch + ", " + roll + ", " + yaw + "]");
                         
                         // Set the battery level
-                        arDrone.batteryLevel.setValue(battery);
+                        ebus.post(new NavDataEvent(seqOnDrone,
+                                (bitStateMask & COM_WATCHDOG_MASK) != 0,
+                                drone.getFlyingState(), altitude, battery,
+                                vx, vy, vz,
+                                pitch, roll, yaw));
                         
                         //printBitMask(bitStateMask);
                      }
@@ -244,17 +288,17 @@ public class NavDataReader extends Thread
 
                         //printBitMask(bitStateMask);
                      }
-                     arDrone.setNavDataBootStrap(true);
+                     drone.setNavDataBootStrap(true);
                   }
 
                   // Verify the bootstrap mode
-                  if(arDrone.setNavDataBootStrap((bitStateMask & COM_BOOTSTRAP_MASK) != 0))
+                  if(drone.setNavDataBootStrap((bitStateMask & COM_BOOTSTRAP_MASK) != 0))
                      // Try to exit the bootstrap mode
-                     arDrone.sendATCmd("AT*CONFIG=" + arDrone.getSeq() + ",\"GENERAL:navdata_demo\",\"TRUE\"");
+                     drone.sendATCmd("AT*CONFIG=" + drone.incrSeq() + ",\"GENERAL:navdata_demo\",\"TRUE\"");
                   
                   
                   // Verify the emergency mode
-                  if(arDrone.setEmergency((bitStateMask & COM_EMERGENCY_MASK) != 0) && print == 0)
+                  if(drone.setEmergency((bitStateMask & COM_EMERGENCY_MASK) != 0) && print == 0)
                      System.out.println("Emergency state!");
 
                   // Verify if the communication is lost
@@ -265,12 +309,12 @@ public class NavDataReader extends Thread
                   // Verify the command watchdog in the bit field state
                   else if((bitStateMask & COM_WATCHDOG_MASK) != 0)
                      // Need to exit the watchdog mode
-                     arDrone.sendATCmd("AT*COMWDG=" + arDrone.getSeq());
+                     drone.sendATCmd("AT*COMWDG=" + drone.incrSeq());
                }
             }
             catch(SocketTimeoutException ex) {
                System.err.println("NavData : Timeout");
-               arDrone.setNavDataBootStrap(true);
+               drone.setNavDataBootStrap(true);
             }
             catch(IOException ex){
                System.err.println("NavDataReader.run: " + ex);
@@ -280,6 +324,7 @@ public class NavDataReader extends Thread
       catch (IOException ex) {
          System.err.println("NavDataReader.run: " + ex);
       }
+      System.out.println("Socket closed, terminating NavDataReader thread");
    }
 
    /**

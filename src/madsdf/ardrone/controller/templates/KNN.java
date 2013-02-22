@@ -22,7 +22,7 @@ import madsdf.ardrone.ActionCommand;
 import madsdf.ardrone.controller.templates.KNNGestureController.GestureTemplate;
 import madsdf.ardrone.utils.DTW;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
-import madsdf.ardrone.utils.MathUtils;
+import madsdf.ardrone.utils.Utils;
 
 public class KNN {    
     private static <K> void zeroInit(Map<K, Float> m, Iterable<K> iter) {
@@ -45,8 +45,8 @@ public class KNN {
                     MathUtils.medianFilter(g.gesture.accel, 10));*/
             //final float dist = DTW.allAxisDTW(windowAccel, g.accel);
             final float dist = DTW.allAxisDTW(
-                    MathUtils.medianFilter(windowAccel, 10), 
-                    MathUtils.medianFilter(g.gesture.accel, 10));
+                    Utils.medianFilter(windowAccel, 10), 
+                    Utils.medianFilter(g.gesture.accel, 10));
             gestureDistances.put(dist, g);
         }
         
@@ -108,7 +108,7 @@ public class KNN {
         for (Entry<Float, GestureTemplate> e : closest) {
             final float dist = e.getKey();
             final GestureTemplate g = e.getValue();
-            MathUtils.mapIncr(_votesPerClass, g.command, 1);
+            Utils.mapIncr(_votesPerClass, g.command, 1);
         }
         
         this.votesPerClass = valueSortedMap(_votesPerClass);
