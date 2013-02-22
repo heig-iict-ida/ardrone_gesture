@@ -511,10 +511,6 @@ public class ARDrone extends JFrame {
      * command
      */
     public synchronized void updateActionMap(ActionCommand command, boolean startAction) {
-        // Add this single action to chart so we are sure the chart updating
-        // thread doesn't miss it
-        /*final float v = startAction ? 1 : 0;
-        commandPanel.addToChart(System.currentTimeMillis(), command.ordinal(), v);*/
         updateCharts();
         
         // TODO: We should do the same with ControlSender (make sure it doesn't

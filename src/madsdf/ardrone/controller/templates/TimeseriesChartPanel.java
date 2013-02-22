@@ -69,48 +69,24 @@ public class TimeseriesChartPanel extends Chart2D {
         }
         
         IAxis yAxis = this.getAxisY();
-        yAxis.setAxisTitle(new AxisTitle(yAxisLabel));
+        //yAxis.setAxisTitle(new AxisTitle(yAxisLabel));
         yAxis.setRangePolicy(new ChartsDrawer.RangePolicyMaxSeen(min, max));
+        yAxis.getAxisTitle().setTitle(null);
         //yAxis.setVisible(false);
         IAxis xAxis = this.getAxisX();
-        xAxis.setAxisTitle(new AxisTitle(xAxisLabel));
-        xAxis.setVisible(false);
+        //xAxis.setAxisTitle(new AxisTitle(xAxisLabel));
+        //xAxis.setVisible(false);
+        xAxis.getAxisTitle().setTitle(null);
+        xAxis.setPaintScale(false);
     }
     
-    // There are different way to update the chart. Note that you should
-    // probably stick to ONE addToChart method. Mixing them might result in
-    // undefined behaviour (due to the counter variable)
-        
     // Add a set of values to the chart. One value for each serie
     public void addToChart(ImmutableMap<Integer, Float> data) {
         final long now = System.currentTimeMillis();
         for (Map.Entry<Integer, Float> e : data.entrySet()) {
             traces.get(e.getKey()).addPoint(now, e.getValue());
         }
-        /*final long now = System.currentTimeMillis();
-        final boolean notify = (now - lastAdd) > 200;
-        if (notify) {
-            lastAdd = now;
-        }
-        for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            //series.get(e.getKey()).addOrUpdate(new FixedMillisecond(counter), e.getValue());
-            series.get(e.getKey()).add(new FixedMillisecond(counter), e.getValue(), notify);
-        }
-        counter++;*/
     }
-    
-    // Add a set of values to the chart. One value for each serie
-    /*public void addToChart(long timestampMS, ImmutableMap<Integer, Float> data) {
-        for (Map.Entry<Integer, Float> e : data.entrySet()) {
-            series.get(e.getKey()).addOrUpdate(new FixedMillisecond(timestampMS), e.getValue());
-            //series.get(e.getKey()).add(new FixedMillisecond(timestampMS), e.getValue());
-        }
-    }*/
-    
-    // Add a unique value with a specific timestamp to the cart
-    /*public void addToChart(long timestampMS, int serieID, Float value) {
-        series.get(serieID).addOrUpdate(new FixedMillisecond(timestampMS), value);
-    }*/
 
     /**
      * This method is called from within the constructor to initialize the form.
