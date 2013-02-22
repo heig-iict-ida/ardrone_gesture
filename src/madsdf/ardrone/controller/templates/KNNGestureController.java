@@ -294,13 +294,16 @@ public class KNNGestureController extends DroneController {
         private final static int HISTORY_SIZE = 2;
         private Deque<Entry> history = new ArrayDeque<>();
         
-        // Store the previous (non-nothing) action we decided. This is so
-        // we can enforce a delay of INTER_ACTION_DELAY between subsequent
-        // actions
-        // can be null if no action has been decided yet
-        //private ActionCommand prevDecided = null;
-        private long prevTimestampMS = System.currentTimeMillis();
-        private long INTER_ACTION_DELAY = 1000;
+        // For each action, store the last time we decided it. This is to
+        // avoid having noisy consecutive actions
+        private final Map<ActionCommand, Long> prevTimestampMS = Maps.newHashMap();
+        private long INTER_ACTION_DELAY = 2000;
+        
+        public GestureDetector() {
+            for (ActionCommand a: ActionCommand.values()) {
+                prevTimestampMS.put(a, System.currentTimeMillis());
+            }
+        }
         
         public void addVotation(KNN knn, float stddev) {
             history.addLast(new Entry(knn, stddev));
@@ -363,8 +366,8 @@ public class KNNGestureController extends DroneController {
             // Check against INTER_ACTION_DELAY
             final long now = System.currentTimeMillis();
             if (prevBest != ActionCommand.NOTHING &&
-                (now - prevTimestampMS) > INTER_ACTION_DELAY) {
-                prevTimestampMS = now;
+                (now - prevTimestampMS.get(prevBest)) > INTER_ACTION_DELAY) {
+                prevTimestampMS.put(prevBest, now);
                 return prevBest;
             } else {
                 System.out.println("Prevented by INTER_ACTION_DELAY");

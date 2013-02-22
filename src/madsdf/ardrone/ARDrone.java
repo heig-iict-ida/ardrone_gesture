@@ -102,6 +102,7 @@ public class ARDrone extends JFrame {
     JButton reconnectButton;
     JSlider forwardBiasSlider;
     JSlider leftBiasSlider;
+    // TODO: Need different sliders for rotation, translation and up/down speed
     JSlider speedSlider;
     TimeseriesChartPanel commandChart;
     TimeseriesChartPanel speedChart;
