@@ -291,7 +291,7 @@ public class KNNGestureController extends DroneController {
         // Minimum number of NN that should agree
         private final static int NN_MIN_AGREE = (int)(KNN_K * 2. / 3.);
         
-        private final static int HISTORY_SIZE = 5;
+        private final static int HISTORY_SIZE = 3;
         private Deque<Entry> history = new ArrayDeque<>();
         
         // Store the previous (non-nothing) action we decided. This is so

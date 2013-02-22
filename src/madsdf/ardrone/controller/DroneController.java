@@ -137,6 +137,7 @@ public class DroneController {
                     // Update speed
                     final double multiplier = computeSpeedMultiplier(remaining,
                             actionElapsed[aidx]);
+                    //final double multiplier = 1.0;
                     drone.setSpeedMultiplier(multiplier);
                 }
             }
