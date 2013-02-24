@@ -64,7 +64,7 @@ public class KNNGestureController extends DroneController {
     public static KNNGestureController FromProperties(
             String name,
             ImmutableSet<ActionCommand> actionMask, ARDrone drone,
-            EventBus ebus, String configSensor) throws FileNotFoundException, IOException {
+            EventBus ebus, String configSensor) throws Exception {
         PropertiesReader reader = new PropertiesReader(configSensor);
         checkState(reader.getString("class_name").equals(KNNGestureController.class.getName()));
         
@@ -80,6 +80,7 @@ public class KNNGestureController extends DroneController {
             final ActionCommand a = ActionCommand.valueOf(e.getValue());
             movementsMap.put(Integer.parseInt(e.getKey()), a);
         }
+        System.out.println(movementsMap);
         
         final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
         List<Gesture> gestures = freader.readAll();
@@ -88,15 +89,22 @@ public class KNNGestureController extends DroneController {
             final ActionCommand cmd = movementsMap.get(g.command);
             templates.add(new GestureTemplate(cmd, g));
         }
+        
+        final int windowSize = descReader.getInteger("windowsize");
+        
+        final String detectorName = KNNGestureController.class.getPackage().getName()
+                + "." + descReader.getString("detector");
+        GestureDetector detector = (GestureDetector)Class.forName(
+                detectorName).newInstance();
          
-        KNNGestureController ctrl = new KNNGestureController(name, actionMask, drone, templates, calibrated);
+        KNNGestureController ctrl = new KNNGestureController(name, actionMask,
+                drone, templates, calibrated, windowSize, detector);
         ebus.register(ctrl);
         return ctrl;
     }
     
-    private Multimap<ActionCommand, GestureTemplate> gestureTemplates = ArrayListMultimap.create();
-    private WindowAccumulator accumulator =
-            new WindowAccumulator<AccelGyro.Sample>(150, 15);
+    private final Multimap<ActionCommand, GestureTemplate> gestureTemplates = ArrayListMultimap.create();
+    private final WindowAccumulator accumulator;
     
     private TimeseriesChartPanel distChartPanel;
     private TimeseriesChartPanel stdChartPanel;
@@ -106,19 +114,25 @@ public class KNNGestureController extends DroneController {
     private JFrame chartFrame;
     private DockController dockController;
     
-    private GestureDetector gestureDetector = new GestureDetector();
+    private GestureDetector gestureDetector;
     
-    private static final int KNN_K = 3;
-    private static final long COMMAND_DURATION = 800;
+    public static final int KNN_K = 3;
+    public static final long COMMAND_DURATION = 800;
     
     private final boolean calibrated;
     
     public KNNGestureController(final String name,
                                 ImmutableSet<ActionCommand> actionMask,
-                                ARDrone drone, List<GestureTemplate> templates,
-                                boolean calibrated) {
+                                ARDrone drone,
+                                List<GestureTemplate> templates,
+                                boolean calibrated,
+                                int windowsize,
+                                GestureDetector detector) {
         super(actionMask, drone);
         this.calibrated = calibrated;
+        this.gestureDetector = detector;
+        
+        accumulator = new WindowAccumulator<>(windowsize, 15);
         
         for (GestureTemplate g: templates) {
             gestureTemplates.put(g.command, g);
@@ -132,6 +146,7 @@ public class KNNGestureController extends DroneController {
         
         // Create the user configuration frame
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 // Dockable frame creation
                 chartFrame = new JFrame();
@@ -139,6 +154,7 @@ public class KNNGestureController extends DroneController {
                 dockController = new DockController();
                 dockController.setRootWindow(chartFrame);
                 chartFrame.addWindowListener(new WindowAdapter() {
+                    @Override
                    public void windowClosing(WindowEvent e) {
                        dockController.kill();
                    } 
@@ -272,108 +288,6 @@ public class KNNGestureController extends DroneController {
                 panel.addToChart(data);
             }
         });
-    }
-    
-    // Gesture detector that makes a decision based on current and historical
-    // KNN votes
-    private static class GestureDetector {
-        private static class Entry {
-            public final KNN knn;
-            public final float stddev;
-            public Entry(KNN knn, float stddev) {
-                this.knn = knn;
-                this.stddev = stddev;
-            }
-        }
-        
-        private final static float STDDEV_THRESHOLD = 2000;
-        private final static float NEAREST_DIST_THRESHOLD = 100000;
-        // Minimum number of NN that should agree
-        private final static int NN_MIN_AGREE = (int)(KNN_K * 2. / 3.);
-        
-        private final static int HISTORY_SIZE = 2;
-        private Deque<Entry> history = new ArrayDeque<>();
-        
-        // For each action, store the last time we decided it. This is to
-        // avoid having noisy consecutive actions
-        private final Map<ActionCommand, Long> prevTimestampMS = Maps.newHashMap();
-        private long INTER_ACTION_DELAY = 2000;
-        
-        public GestureDetector() {
-            for (ActionCommand a: ActionCommand.values()) {
-                prevTimestampMS.put(a, System.currentTimeMillis());
-            }
-        }
-        
-        public void addVotation(KNN knn, float stddev) {
-            history.addLast(new Entry(knn, stddev));
-            while (history.size() > HISTORY_SIZE) {
-                history.removeFirst();
-            }
-        }
-        
-        public ActionCommand decide() {
-            ActionCommand prevBest = null;
-            //System.out.println("==== decide ====");
-            for (Entry e: history) {
-                final KNN knn = e.knn;
-                final float stddev = e.stddev;
-                // Check stddev above threshold
-                if (stddev < STDDEV_THRESHOLD) {
-                    return ActionCommand.NOTHING;
-                }
-                
-                // Check that nearest neighbor is of majority class
-                List<Map.Entry<ActionCommand, Float>> l = Lists.newArrayList(
-                        knn.votesPerClass.entrySet());
-                final ActionCommand bestClass = l.get(0).getKey();
-                //System.out.println("best : " + bestClass);
-                if (!knn.getNeighborClass(0).equals(bestClass)) {
-                    return ActionCommand.NOTHING;
-                }
-                //System.out.println("1");
-                // Check dist of nearest neighbour below threshold
-                if (knn.getNeighborDist(0) > NEAREST_DIST_THRESHOLD) {
-                    return ActionCommand.NOTHING;
-                }
-                //System.out.println("2");
-                
-                // Check number of agreeing NN
-                //System.out.println("votes for best : " + knn.votesPerClass.get(bestClass));
-                //System.out.println("min agree : " + NN_MIN_AGREE);
-                if (knn.votesPerClass.get(bestClass) < NN_MIN_AGREE) {
-                    return ActionCommand.NOTHING;
-                }
-                //System.out.println("3");
-                
-                // Check that previous votation detected same class as us
-                if (prevBest != null && prevBest != bestClass) {
-                    return ActionCommand.NOTHING;
-                }
-                //System.out.println("4");
-                
-                prevBest = bestClass;
-            }
-            
-            // If we reach this point, this means that all entries in history
-            // have :
-            // - detected the same class
-            // - fulfilled all conditions
-            if (prevBest == null) {
-                return ActionCommand.NOTHING;
-            }
-            
-            // Check against INTER_ACTION_DELAY
-            final long now = System.currentTimeMillis();
-            if (prevBest != ActionCommand.NOTHING &&
-                (now - prevTimestampMS.get(prevBest)) > INTER_ACTION_DELAY) {
-                prevTimestampMS.put(prevBest, now);
-                return prevBest;
-            } else {
-                System.out.println("Prevented by INTER_ACTION_DELAY");
-                return ActionCommand.NOTHING;
-            }
-        }
     }
     
     
