@@ -329,18 +329,6 @@ public class NeuralController extends DroneController {
      * @return the corresponding action command
      */
     public ActionCommand actionFromString(String s) {
-
-        // Special treatment for the speed
-        if (s.toUpperCase().contains("SPEED")) {
-
-            // Verify if the speed command contain a value
-            String[] speed = s.split("=");
-            if (speed.length > 1) {
-                ActionCommand.SPEED.setVal(Integer.parseInt(speed[1]));
-            }
-            return ActionCommand.SPEED;
-        }
-
         // Standard treatement for the others command
         try {
             return ActionCommand.valueOf(s.toUpperCase());

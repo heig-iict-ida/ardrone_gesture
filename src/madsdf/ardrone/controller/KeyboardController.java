@@ -76,19 +76,6 @@ public class KeyboardController extends DroneController implements KeyEventDispa
      */
     public static ActionCommand actionFromKeyCode(int keycode) {
         switch (keycode) {
-            // Speed control
-            case KeyEvent.VK_1:
-            case KeyEvent.VK_2:
-            case KeyEvent.VK_3:
-            case KeyEvent.VK_4:
-            case KeyEvent.VK_5:
-            case KeyEvent.VK_6:
-            case KeyEvent.VK_7:
-            case KeyEvent.VK_8:
-            case KeyEvent.VK_9:
-                ActionCommand.SPEED.setVal(keycode - KeyEvent.VK_1 + 1);
-                return ActionCommand.SPEED;
-
             // Switch video channel
             case KeyEvent.VK_V:
                 return ActionCommand.CHANGEVIDEO;

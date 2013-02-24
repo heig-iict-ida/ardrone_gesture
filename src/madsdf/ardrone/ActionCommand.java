@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableSortedMap;
  */
 public enum ActionCommand
 {
-   SPEED,
    TAKEOFF,
    LAND,
    HOVER,
@@ -43,26 +42,5 @@ public enum ActionCommand
            b.put(a.ordinal(), a.name());
        }
        ordinalToName = b.build();
-   }
-
-
-   /**
-    * Allow to add an integer value to the constant, useful for the speed
-    * for example
-    */
-   private int val;
-
-   /**
-    * @return the integer value associated with the constant
-    */
-   public int getVal() {
-      return val;
-   }
-
-   /**
-    * @param val the integer value to set for the constant
-    */
-   public void setVal(int val) {
-      this.val = val;
    }
 }

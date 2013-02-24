@@ -103,7 +103,9 @@ public class ARDrone extends JFrame {
     JSlider forwardBiasSlider;
     JSlider leftBiasSlider;
     // TODO: Need different sliders for rotation, translation and up/down speed
-    JSlider speedSlider;
+    JSlider transSpeedSlider;
+    JSlider rotSpeedSlider;
+    JSlider vertSpeedSlider;
     TimeseriesChartPanel commandChart;
     TimeseriesChartPanel speedChart;
     TimeseriesChartPanel pcmdChart;
@@ -144,6 +146,15 @@ public class ARDrone extends JFrame {
         final String leftShimmerID = "9EDB";
         ARDrone arDrone = new ARDrone(leftShimmerID, rightShimmerID);
     }
+    
+    private static JSlider newPercentageSlider(int initialPerc) {
+        JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, initialPerc);
+        slider.setMajorTickSpacing(10);
+        slider.setMinorTickSpacing(5);
+        slider.setPaintLabels(true);
+        slider.setPaintTicks(true);
+        return slider;
+    }
 
     /**
      * Constructor of the drone controller
@@ -170,7 +181,7 @@ public class ARDrone extends JFrame {
         videoPanel = new VideoPanel();
         
         JPanel northPanel = new JPanel();
-        northPanel.setLayout(new GridLayout(4, 2));
+        northPanel.setLayout(new GridLayout(6, 2));
         
         this.getContentPane().add(northPanel, BorderLayout.NORTH);
         
@@ -212,7 +223,6 @@ public class ARDrone extends JFrame {
         controlsPanel.add(reconnectButton);
         northPanel.add(controlsPanel);
         
-        
         northPanel.add(new JLabel("Forward bias %"));
         forwardBiasSlider = new JSlider(JSlider.HORIZONTAL, -100, 100, 0);
         forwardBiasSlider.setMajorTickSpacing(20);
@@ -229,13 +239,17 @@ public class ARDrone extends JFrame {
         leftBiasSlider.setPaintTicks(true);
         northPanel.add(leftBiasSlider);
         
-        northPanel.add(new JLabel("Speed %"));
-        speedSlider = new JSlider(JSlider.HORIZONTAL, 0, 100, 20);
-        speedSlider.setMajorTickSpacing(10);
-        speedSlider.setMinorTickSpacing(5);
-        speedSlider.setPaintLabels(true);
-        speedSlider.setPaintTicks(true);
-        northPanel.add(speedSlider);
+        northPanel.add(new JLabel("Translation speed %"));
+        transSpeedSlider = newPercentageSlider(20);
+        northPanel.add(transSpeedSlider);
+        
+        northPanel.add(new JLabel("Rotation speed %"));
+        rotSpeedSlider = newPercentageSlider(50);
+        northPanel.add(rotSpeedSlider);
+        
+        northPanel.add(new JLabel("Vertical speed %"));
+        vertSpeedSlider = newPercentageSlider(50);
+        northPanel.add(vertSpeedSlider);
 
         logArea = new JTextArea();
         logArea.setEnabled(false);
@@ -254,7 +268,10 @@ public class ARDrone extends JFrame {
         southPanel.add(commandChart, c);
         
         speedChart = new TimeseriesChartPanel("Drone speed",
-                "Time (samples)", "Speed", ImmutableSortedMap.of(0, "Speed"),
+                "Time (samples)", "Speed", ImmutableSortedMap.of(
+                        0, "trans speed",
+                        1, "rot speed",
+                        2, "vert speed"),
                 100, 0, 1);
         speedChart.setPreferredSize(new Dimension(0, 150));
         c.gridy = 1;
@@ -392,7 +409,10 @@ public class ARDrone extends JFrame {
                 commandChart.addToChart(/*System.currentTimeMillis(),*/ data.build());
                 
                 // Speed
-                speedChart.addToChart(ImmutableMap.of(0, getFinalSpeed()));
+                speedChart.addToChart(ImmutableMap.of(
+                        0, getTranslationSpeed(),
+                        1, getRotationSpeed(),
+                        2, getVerticalSpeed()));
             }
         });
     }
@@ -436,17 +456,17 @@ public class ARDrone extends JFrame {
                 // Define the flag for the movement commands mode
                 float gaz, pitch, roll, yaw;
                 roll = - getLeftBias()
-                        + getFinalSpeed() * (+Utils.bToI(isActionRight())
+                        + getTranslationSpeed() * (+Utils.bToI(isActionRight())
                         - Utils.bToI(isActionLeft()));
 
                 pitch = -getForwardBias()
-                        + getFinalSpeed() * (Utils.bToI(isActionBackward())
+                        + getTranslationSpeed() * (Utils.bToI(isActionBackward())
                         - Utils.bToI(isActionForward()));
 
-                gaz = getFinalSpeed() * (Utils.bToI(isActionTop())
+                gaz = getVerticalSpeed() * (Utils.bToI(isActionTop())
                         - Utils.bToI(isActionDown()));
 
-                yaw = getFinalSpeed() * (Utils.bToI(isActionRotateRight())
+                yaw = getRotationSpeed() * (Utils.bToI(isActionRotateRight())
                         - Utils.bToI(isActionRotateLeft()));
 
                 // Send the movement command
@@ -519,38 +539,6 @@ public class ARDrone extends JFrame {
          
         // process command
         switch (command) {
-            case SPEED:
-                switch (command.getVal()) {
-                    case 1:
-                        setSpeed(0.05, startAction);
-                        break;
-                    case 2:
-                        setSpeed(0.1, startAction);
-                        break;
-                    case 3:
-                        setSpeed(0.15, startAction);
-                        break;
-                    case 4:
-                        setSpeed(0.25, startAction);
-                        break;
-                    case 5:
-                        setSpeed(0.35, startAction);
-                        break;
-                    case 6:
-                        setSpeed(0.45, startAction);
-                        break;
-                    case 7:
-                        setSpeed(0.6, startAction);
-                        break;
-                    case 8:
-                        setSpeed(0.8, startAction);
-                        break;
-                    case 9:
-                        setSpeed(0.99, startAction);
-                        break;
-                }
-                break;
-
             // Switch video channel
             case CHANGEVIDEO:
                 if (startAction) {
@@ -607,24 +595,6 @@ public class ARDrone extends JFrame {
         }
         logArea.setText(status);
     }
-
-
-
-
-
-    /**
-     * @param speed the speed to set
-     * @param set true to set the speed and false to ignore it
-     */
-    public void setSpeed(double speed, boolean set) {
-        if (set) {
-            speedSlider.setValue((int)(100*speed));
-            //this.speed = (float) speed;
-
-            // Print the speed
-            System.out.println("Speed: " + getFinalSpeed());
-        }
-    }
     
     public void setSpeedMultiplier(double multiplier) {
         speedMultiplier = (float)multiplier;
@@ -637,13 +607,17 @@ public class ARDrone extends JFrame {
     public float getLeftBias() {
         return leftBiasSlider.getValue() / 100.f;
     }
-
-    /**
-     * @return the actual speed
-     */
-    public float getFinalSpeed() {
-        return speedMultiplier * (speedSlider.getValue() / 100.f);
-        //return speedMultiplier * speed;
+    
+    public float getTranslationSpeed() {
+        return speedMultiplier * (transSpeedSlider.getValue() / 100.f);
+    }
+    
+    public float getRotationSpeed() {
+        return speedMultiplier * (rotSpeedSlider.getValue() / 100.f);
+    }
+    
+    public float getVerticalSpeed() {
+        return speedMultiplier * (vertSpeedSlider.getValue() / 100.f);
     }
 
     /**
