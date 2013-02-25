@@ -64,6 +64,7 @@ public class TimeseriesChartPanel extends Chart2D {
             ITrace2D trace = new Trace2DLtd(numVisible);
             trace.setName(e.getValue());
             trace.setColor(ChartsDrawer.colors[e.getKey()]);
+            trace.setStroke(ChartsDrawer.strokes[e.getKey()]);
             traces.put(e.getKey(), trace);
             this.addTrace(trace);
         }
