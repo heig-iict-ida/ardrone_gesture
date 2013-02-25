@@ -56,11 +56,6 @@ public class RepetitiveGestureDetector implements GestureDetector {
 
     @Override
     public ActionCommand decide() {
-        // Check stddev above threshold
-        if (stddev < STDDEV_THRESHOLD) {
-            return ActionCommand.NOTHING;
-        }
-
         // Check that nearest neighbor is of majority class
         List<Map.Entry<ActionCommand, Float>> l = Lists.newArrayList(
                 knn.votesPerClass.entrySet());
@@ -81,6 +76,15 @@ public class RepetitiveGestureDetector implements GestureDetector {
         //System.out.println("min agree : " + NN_MIN_AGREE);
         if (knn.votesPerClass.get(bestClass) < NN_MIN_AGREE) {
             return ActionCommand.NOTHING;
+        }
+        
+        // Check stddev above threshold
+        // TODO: Ugly hard-coded hack
+        // Don't check of GOUP and GODOWN because they are static positions
+        if (bestClass != ActionCommand.GOTOP && bestClass != ActionCommand.GODOWN) {
+            if (stddev < STDDEV_THRESHOLD) {
+                return ActionCommand.NOTHING;
+            }
         }
         
         // Return here because we don't want to update prevDecided
