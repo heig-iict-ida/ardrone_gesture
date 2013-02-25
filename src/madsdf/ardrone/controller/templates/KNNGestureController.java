@@ -19,8 +19,10 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import madsdf.ardrone.utils.DataFileReader;
 import madsdf.ardrone.utils.DataFileReader.Gesture;
@@ -61,6 +65,8 @@ public class KNNGestureController extends DroneController {
         }
     }
     
+    private static final Pattern fnamePattern = Pattern.compile("(\\w+)_movement_\\d+_\\d+.txt");
+    
     public static KNNGestureController FromProperties(
             String name,
             ImmutableSet<ActionCommand> actionMask, ARDrone drone,
@@ -69,7 +75,7 @@ public class KNNGestureController extends DroneController {
         checkState(reader.getString("class_name").equals(KNNGestureController.class.getName()));
         
         String sensorDataBasedir = reader.getString("sensor_basedir");
-        String templates_file = sensorDataBasedir + "/" + reader.getString("templates_file");
+        //String templates_file = sensorDataBasedir + "/" + reader.getString("templates_file");
         
         PropertiesReader descReader = new PropertiesReader(sensorDataBasedir + "/" + reader.getString("desc_file"));
         boolean calibrated = descReader.getBoolean("calibrated");
@@ -82,13 +88,40 @@ public class KNNGestureController extends DroneController {
         }
         System.out.println(movementsMap);
         
-        final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
-        List<Gesture> gestures = freader.readAll();
+        
+        // Read all "SHIMID_movement_xx_xx.txt" files in directory
+        File[] templateFiles = new File(sensorDataBasedir).listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.contains("movement") && name.endsWith(".txt");
+            }
+        });
+        List<Gesture> gestures = Lists.newArrayList();
+        for (File tf : templateFiles) {
+            final Matcher m = fnamePattern.matcher(tf.getName());
+            checkState(m.matches());
+            final String shimmerID = m.group(1);
+            
+            final DataFileReader freader = new DataFileReader(new FileReader(tf));
+            
+            // Calibrated if needed
+            if (calibrated) {
+                List<Gesture> tmp = freader.readAll();
+                for (Gesture g : tmp) {
+                    gestures.add(g.calibrateGesture(shimmerID));
+                }
+            } else {
+                gestures.addAll(freader.readAll());
+            }
+        }
+        /*final DataFileReader freader = new DataFileReader(new FileReader(templates_file));
+        List<Gesture> gestures = freader.readAll();*/
         List<GestureTemplate> templates = Lists.newArrayList(); 
         for (Gesture g : gestures) {
             final ActionCommand cmd = movementsMap.get(g.command);
             templates.add(new GestureTemplate(cmd, g));
         }
+        
         
         final int windowSize = descReader.getInteger("windowsize");
         

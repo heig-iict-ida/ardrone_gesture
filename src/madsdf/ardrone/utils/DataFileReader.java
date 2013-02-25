@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import madsdf.shimmer.shimmer_calib.Calibration;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
@@ -70,6 +71,12 @@ public class DataFileReader {
                    Objects.equal(other.sample, sample) &&
                    Arrays.deepEquals(other.accel, accel) &&
                    Arrays.deepEquals(other.gyro, gyro);
+        }
+        
+        public Gesture calibrateGesture(String shimmerID) throws IOException {
+            return new Gesture(command, sample,
+                    Calibration.calibrate(shimmerID, accel, Calibration.CALIB_ACCEL),
+                    Calibration.calibrate(shimmerID, gyro, Calibration.CALIB_GYRO));
         }
     }
     

@@ -17,8 +17,8 @@ import madsdf.ardrone.ActionCommand;
  */
 public class RepetitiveGestureDetector implements GestureDetector {
 
-    private final static float STDDEV_THRESHOLD = 2000;
-    private final static float NEAREST_DIST_THRESHOLD = 100000;
+    private final static float STDDEV_THRESHOLD = /*2000*/20;
+    private final static float NEAREST_DIST_THRESHOLD = /*100000*/1000;
     private final static int NN_MIN_AGREE = (int) (KNNGestureController.KNN_K * 2. / 3.);
     
     // Minimum delay between two DIFFERENT actions

@@ -142,8 +142,10 @@ public class ARDrone extends JFrame {
         }
 
         // Create the drone controller
-        final String rightShimmerID = "BDCD";
-        final String leftShimmerID = "9EDB";
+        /*final String rightShimmerID = "BDCD";
+        final String leftShimmerID = "9EDB";*/
+        final String rightShimmerID = "9EDB";
+        final String leftShimmerID = "BDCD";
         ARDrone arDrone = new ARDrone(leftShimmerID, rightShimmerID);
     }
     
