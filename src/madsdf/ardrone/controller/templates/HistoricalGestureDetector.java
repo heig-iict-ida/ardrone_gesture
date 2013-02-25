@@ -26,6 +26,7 @@ public class HistoricalGestureDetector implements GestureDetector {
             this.stddev = stddev;
         }
     }
+    public static final long COMMAND_DURATION = 800;
     private final static float STDDEV_THRESHOLD = 2000;
     private final static float NEAREST_DIST_THRESHOLD = 100000;
     // Minimum number of NN that should agree
@@ -43,13 +44,25 @@ public class HistoricalGestureDetector implements GestureDetector {
         }
     }
 
+    @Override
     public void addVotation(KNN knn, float stddev) {
         history.addLast(new Entry(knn, stddev));
         while (history.size() > HISTORY_SIZE) {
             history.removeFirst();
         }
     }
+    
+    @Override
+    public long getDurationMS() {
+        return COMMAND_DURATION;
+    }
+    
+    @Override
+    public boolean hasActionDuration() {
+        return true;
+    }
 
+    @Override
     public ActionCommand decide() {
         ActionCommand prevBest = null;
         //System.out.println("==== decide ====");

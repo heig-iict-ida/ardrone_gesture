@@ -117,7 +117,6 @@ public class KNNGestureController extends DroneController {
     private GestureDetector gestureDetector;
     
     public static final int KNN_K = 3;
-    public static final long COMMAND_DURATION = 800;
     
     private final boolean calibrated;
     
@@ -295,65 +294,39 @@ public class KNNGestureController extends DroneController {
                                float stddev) {
         gestureDetector.addVotation(knn, stddev);
         final ActionCommand detected = gestureDetector.decide();
+        
+        float duration;
+        if (gestureDetector.hasActionDuration()) {
+            duration = gestureDetector.getDurationMS();
+        } else {
+            duration = 1.0f;
+        }
         ImmutableMap.Builder<ActionCommand, Float> _detections = ImmutableMap.builder();
         for (ActionCommand command: gestureTemplates.keySet()) {
             if (detected.equals(command)) {
-                _detections.put(command, 1.0f);
+                _detections.put(command, (float)duration);
             } else {
                 _detections.put(command, 0.0f);
             }
         }
         ImmutableMap<ActionCommand, Float> detections = _detections.build();
-        
-        /*if (stddev > 2000) {
-            // Sort by number of votes
-            List<Entry<Integer, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
-            final Entry<Integer, Float> nearest = l.get(0);
-            final Entry<Integer, Float> secondNearest = l.get(1);
-            final float nnratio = secondNearest.getValue() / nearest.getValue();
-            
-            List<Entry<Integer, Float>> dl = Lists.newArrayList(knn.distPerClass.entrySet());
-            final float bestClassAvgDist = dl.get(0).getValue();
-            System.out.println("--- decideGesture");
-            System.out.println("best class : " + nearest.getKey() + ", avg dist : " + bestClassAvgDist);
-            Entry<Float, Gesture> nearestEntry = knn.nearest.get(0);
-            System.out.println("nearest : " + nearestEntry.getValue().sample
-                    + " dist = " + nearestEntry.getKey());
-            System.out.println("nnratio : " + nnratio);
-            final int command = nearest.getKey();
-            if (nnratio < 0.8 && command < 5) { // Disable rotation and noise commands
-                if ((stddev > 4000) || (command == 4 && stddev > 2000)) {
-                    detections.put(command, 1.0f);
-                }
-            }
-        }*/
-        
-        /*if (stddev > 2000) {  // 25
-            List<Entry<ActionCommand, Float>> l = Lists.newArrayList(knn.votesPerClass.entrySet());
-            final ActionCommand bestClass = l.get(0).getKey();
-            System.out.println("bestclass " + bestClass + " nearest : " + knn.getNeighborClass(0));
-            
-            // Check that nearest neighbor is of majority class
-            if (knn.getNeighborClass(0).equals(bestClass)) {
-                // Check that nearest neighbor dist is below threshold
-                System.out.println("dist : " + knn.getNeighborDist(0));
-                if (knn.getNeighborDist(0) < 100000) { // 125
-                    detections.put(bestClass, 1.0f);
-                }
-            }
-        }*/
-        
         updateChart(detectedChartPanel, toIntegerMap(detections));
-        sendToDrone(detections);
+        if (gestureDetector.hasActionDuration()) {
+            sendToDrone(detections);
+        } else {
+            for (Entry<ActionCommand, Float> e : detections.entrySet()) {
+                this.directUpdateDroneAction(e.getKey(), e.getValue() > 0);
+            }
+        } 
     }
     
     private void sendToDrone(Map<ActionCommand, Float> detections) {
         for (Entry<ActionCommand, Float> e : detections.entrySet()) {
-            final boolean v = e.getValue() > 0;
-            if (e.getValue() > 0) {
-                this.enableAction(e.getKey(), COMMAND_DURATION);
+            final float duration = e.getValue();
+            if (duration > 0) {
+                System.out.println("enablingAction : " + e.getKey());
+                this.enableAction(e.getKey(), (long)duration);
             }
-            //this.updateDroneAction(e.getKey(), v);
         }
     }
     
