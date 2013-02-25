@@ -347,18 +347,16 @@ public class ARDrone extends JFrame {
         // Create the keyboard controller
         keyboardController = new KeyboardController(
                 ActionCommand.allCommandMask(), this);
-        
-        //controlSender = new ControlSender(this, controllerTickBus);
 
         /*DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
         controllerTickBus.register(controller);*/
         
-        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
-        //leftShimmer.setVisible(true);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        leftShimmer.setVisible(true);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
         rightShimmer.setVisible(true);
 
-        //EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
+        EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
         // TODO: Should use configDrone.controller property
@@ -373,11 +371,11 @@ public class ARDrone extends JFrame {
                 ActionCommand.allCommandMask(), this, rightBus,
                 "dtw_gestures_right.properties");
         controllerTickBus.register(rightGestureController);
-        /*KNNGestureController leftGestureController =
+        KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
                 "dtw_gestures_left.properties");
-        controllerTickBus.register(leftGestureController);*/
+        controllerTickBus.register(leftGestureController);
         
         
         // Launch the configuration of the drone
