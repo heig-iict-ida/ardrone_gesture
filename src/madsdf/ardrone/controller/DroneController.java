@@ -91,8 +91,13 @@ public class DroneController {
     }*/
     
     public void directUpdateDroneAction(ActionCommand cmd, boolean newState) {
+        directUpdateDroneAction(cmd, newState, ARDrone.DEFAULT_PRIORITY);
+    }
+    
+    public void directUpdateDroneAction(ActionCommand cmd, boolean newState,
+                                        int priority) {
         if (actionMask.contains(cmd)) {
-            drone.updateActionMap(cmd, newState);
+            drone.updateActionMap(cmd, newState, priority);
         }
     }
     
@@ -129,9 +134,9 @@ public class DroneController {
             actionRemaining[aidx] = remaining;
             actionElapsed[aidx] += elapsed;
             if (remaining == 0) {
-                drone.updateActionMap(a, false);
+                drone.updateActionMap(a, false, ARDrone.DEFAULT_PRIORITY);
             } else {
-                drone.updateActionMap(a, true);
+                drone.updateActionMap(a, true, ARDrone.DEFAULT_PRIORITY);
                 
                 if (a != ActionCommand.NOTHING) {
                     // Update speed

@@ -82,14 +82,24 @@ public class ARDrone extends JFrame {
     // Drone ip adresse
     private InetAddress droneAdr;
     
-    
-    // Drone speed
-    //private float speed = CONFIG_SPEED;
     // Speed multiplier. Can be used to modulate speed
     private float speedMultiplier = 1.0f;
     
     // Boolean action map
     private Map<ActionCommand, Boolean> commandState = Maps.newHashMap();
+    
+    // We use command priority to allow the keyboard controller to supersede
+    // the gesture commands. Gesture commands will have a priority of 0 while
+    // keyboard commands have a priority of 1.
+    // All commands that are below this minimum priority level will simply be
+    // ignored
+    public static final int DEFAULT_PRIORITY = 0;
+    private int commandPriority = DEFAULT_PRIORITY;
+    
+    // If true, speed sliders will be ignored and considered to be set at
+    // DEFAULT_SPEED
+    public static final int DEFAULT_SPEED = 50;
+    public boolean ignoreSpeedSliders = false;
     
     private DroneClient droneClient;
     
@@ -396,6 +406,17 @@ public class ARDrone extends JFrame {
         System.out.println("Running..");
     }
     
+    public void setCommandPriority(int newPriority) {
+        // When increasing minimum priority, reset all commands
+        if (newPriority > commandPriority) {
+            for (ActionCommand a: ActionCommand.values()) {
+                commandState.put(a, false);
+            }
+        }
+        commandPriority = newPriority;
+        
+    }
+    
     private void updateCharts() {
         SwingUtilities.invokeLater(new Runnable(){
             @Override
@@ -406,7 +427,7 @@ public class ARDrone extends JFrame {
                     final float v = e.getValue() ? 1 : 0;
                     data.put(e.getKey().ordinal(), v);
                 }
-                commandChart.addToChart(/*System.currentTimeMillis(),*/ data.build());
+                commandChart.addToChart(data.build());
                 
                 // Speed
                 speedChart.addToChart(ImmutableMap.of(
@@ -531,12 +552,12 @@ public class ARDrone extends JFrame {
      * @param startAction true to send the command and false to stop sending the
      * command
      */
-    public synchronized void updateActionMap(ActionCommand command, boolean startAction) {
-        updateCharts();
+    public synchronized void updateActionMap(ActionCommand command, boolean startAction,
+                                             int priority) {
+        if (priority < commandPriority) {
+            return;
+        }
         
-        // TODO: We should do the same with ControlSender (make sure it doesn't
-        // miss too short commands)
-         
         // process command
         switch (command) {
             // Switch video channel
@@ -585,6 +606,7 @@ public class ARDrone extends JFrame {
             default:
                 break;
         }
+        updateCharts();
         updateLog();
     }
 
@@ -609,15 +631,27 @@ public class ARDrone extends JFrame {
     }
     
     public float getTranslationSpeed() {
-        return speedMultiplier * (transSpeedSlider.getValue() / 100.f);
+        if (ignoreSpeedSliders) {
+            return speedMultiplier * DEFAULT_SPEED / 100.f;
+        } else {
+            return speedMultiplier * (transSpeedSlider.getValue() / 100.f);
+        }
     }
     
     public float getRotationSpeed() {
-        return speedMultiplier * (rotSpeedSlider.getValue() / 100.f);
+        if (ignoreSpeedSliders) {
+            return speedMultiplier * DEFAULT_SPEED / 100.f;
+        } else {
+            return speedMultiplier * (rotSpeedSlider.getValue() / 100.f);
+        }
     }
     
     public float getVerticalSpeed() {
-        return speedMultiplier * (vertSpeedSlider.getValue() / 100.f);
+        if (ignoreSpeedSliders) {
+            return speedMultiplier * DEFAULT_SPEED / 100.f;
+        } else {
+            return speedMultiplier * (vertSpeedSlider.getValue() / 100.f);
+        }
     }
 
     /**

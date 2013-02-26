@@ -40,7 +40,7 @@ public class KeyboardController extends DroneController implements KeyEventDispa
     // keyPressed even if the key is still pressed
     // Could implement timer workaround described there :
     // http://stackoverflow.com/questions/1736828/how-to-stop-repeated-keypressed-keyreleased-events-in-swing
-    
+    private static final int KEYBOARD_PRIORITY = 1;
     
     /**
      * Constructor
@@ -60,11 +60,14 @@ public class KeyboardController extends DroneController implements KeyEventDispa
             this.drone.setSpeedMultiplier(1.0);
             final ActionCommand a = actionFromKeyCode(ke.getKeyCode());
             if (a != ActionCommand.NOTHING) {
-                this.directUpdateDroneAction(a, true);
+                this.drone.setCommandPriority(KEYBOARD_PRIORITY);
+                this.directUpdateDroneAction(a, true, KEYBOARD_PRIORITY);
                 return true;
             }
         } else if (ke.getID() == KeyEvent.KEY_RELEASED) {
-            this.directUpdateDroneAction(actionFromKeyCode(ke.getKeyCode()), false);
+            this.directUpdateDroneAction(actionFromKeyCode(ke.getKeyCode()),
+                    false, KEYBOARD_PRIORITY);
+            this.drone.setCommandPriority(ARDrone.DEFAULT_PRIORITY);
         }
         return false;
     }
