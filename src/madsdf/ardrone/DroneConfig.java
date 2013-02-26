@@ -27,6 +27,7 @@ public class DroneConfig extends PropertiesReader {
             .put("altitude_min", "20") // min altitude
             .put("vz_max", "1300") // drone max up/down speed
             .put("yaw_max", "4.0")  // drone max yaw speed
+            .put("all_shimmers", "9EDB;BDCD")
             .put("left_shimmer", "9EDB")
             .put("right_shimmer", "BDCD")
             .build();

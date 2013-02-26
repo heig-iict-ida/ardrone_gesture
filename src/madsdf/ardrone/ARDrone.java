@@ -348,12 +348,13 @@ public class ARDrone extends JFrame {
         /*DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
         controllerTickBus.register(controller);*/
         
+        final String[] shimmerIDs = DroneConfig.get().getStringArray("all_shimmers");
         final String leftShimmerID = DroneConfig.get().getString("left_shimmer");
         final String rightShimmerID = DroneConfig.get().getString("right_shimmer");
         
-        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID, shimmerIDs);
         leftShimmer.setVisible(true);
-        rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
+        rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID, shimmerIDs);
         rightShimmer.setVisible(true);
 
         EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);

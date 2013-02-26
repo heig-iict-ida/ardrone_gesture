@@ -61,6 +61,10 @@ public class PropertiesReader {
         return res;
     }
     
+    public String[] getStringArray(String key) {
+        return getString(key).split(";");
+    }
+    
     public boolean getBoolean(String key) {
         return Boolean.parseBoolean(getString(key));
     }
