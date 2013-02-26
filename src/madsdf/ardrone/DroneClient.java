@@ -32,28 +32,14 @@ public class DroneClient {
     static final int CMD_INTERVAL = 30;
     // End line char
     static final String LF = "\r";
-    
-    // Base configuration
-    static final float CONFIG_EULER_MAX = 0.22f;
-    static final int CONFIG_VZ_MAX = 1300;
-    static final float CONFIG_YAW_MAX = 4.0f;
-    static final int CONFIG_ALTITUDE_MAX = 3000;
-    static final int CONFIG_ALTITUDE_MIN = 20;
-    static final float CONFIG_SPEED = 0.25f;
-    static final String CONFIG_DEFAULT_IP = "192.168.1.1";
     // ARDrone listening port
     static final int NAVDATA_PORT = 5554;
     static final int VIDEO_PORT = 5555;
-
     // NavDataReader offset
     static final int NAVDATA_STATE = 4;
     static final int NAVDATA_BATTERY = 24;
     static final int NAVDATA_ALTITUDE = 40;
     // AT*REF values
-    /*static final int AT_REF_TAKEOFF = 290718208;
-    static final int AT_REF_LANDING = 290717696;
-    static final int AT_REF_EMERGENCY = 290717952;
-    static final int AT_REF_RESET = 290717696;*/
     static final int AT_REF_TAKEOFF = 1 << 9;
     static final int AT_REF_LANDING = 0;
     static final int AT_REF_EMERGENCY = 1 << 8;
@@ -130,8 +116,8 @@ public class DroneClient {
         }
     }
     
-    public void connect(Properties configDrone) throws IOException {
-        droneAddress = InetAddress.getByName(configDrone.getProperty("ip", CONFIG_DEFAULT_IP));
+    public void connect() throws IOException {
+        droneAddress = InetAddress.getByName(DroneConfig.get().getString("ip"));
         
         // Open send socket
         atSocket = new DatagramSocket(AT_PORT);
@@ -142,7 +128,7 @@ public class DroneClient {
             }
         }, CMD_INTERVAL, CMD_INTERVAL);
         
-        sendConfig(configDrone);
+        sendConfig();
     }
     
     public void disconnect() {
@@ -286,7 +272,7 @@ public class DroneClient {
      * Configure the drone and start the control sender, the navigation data
      * thread, the video reader thread and the control sender thread.
      */
-    private void sendConfig(Properties configDrone) {
+    private void sendConfig() {
         // Initialisation of the drone
         /*sendATCmd("AT*PMODE=" + getSeq() + ",2");
         sendATCmd("AT*MISC=" + getSeq() + ",2,20,2000,3000");*/
@@ -295,11 +281,11 @@ public class DroneClient {
 
         // Set the altitude max
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:altitude_max\",\""
-                + configDrone.getProperty("altitude_max", CONFIG_ALTITUDE_MAX + "") + "\"");
+                + DroneConfig.get().getString("altitude_max") + "\"");
 
         // Set the altitude min
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:altitude_min\",\""
-                + configDrone.getProperty("altitude_min", CONFIG_ALTITUDE_MIN + "") + "\"");
+                + DroneConfig.get().getString("altitude_min") + "\"");
 
         // Set the control level (0 = no combined yaw mode)
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:control_level\",\"0\"");
@@ -312,15 +298,15 @@ public class DroneClient {
 
         // Set the drone max angle
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:euler_angle_max\",\""
-                + configDrone.getProperty("euler_max", CONFIG_EULER_MAX + "") + "\"");
+                + DroneConfig.get().getString("euler_max") + "\"");
 
         // Set the drone max up/down speed
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:control_vz_max\",\""
-                + configDrone.getProperty("vz_max", CONFIG_VZ_MAX + "") + "\"");
+                + DroneConfig.get().getString("vz_max") + "\"");
 
         // Set the drone yaw speed
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"control:control_yaw\",\""
-                + configDrone.getProperty("yaw_max", CONFIG_YAW_MAX + "") + "\"");
+                + DroneConfig.get().getString("yaw_max") + "\"");
 
         // Set the navdata demo mode
         sendATCmd("AT*CONFIG=" + incrSeq() + ",\"general:navdata_demo\",\"TRUE\"");

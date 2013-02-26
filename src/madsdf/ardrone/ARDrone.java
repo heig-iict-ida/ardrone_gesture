@@ -74,11 +74,8 @@ import madsdf.shimmer.event.Globals;
  * @version 1.0
  */
 public class ARDrone extends JFrame {
-
     private static final long serialVersionUID = 1L;
 
-    static final String CONFIG_DRONE_PROPERTIES = "ardrone.properties";
-    static final String CONFIG_MOVEMENT_MODEL = "gesture.SevenFeaturesSelectionMovement";
     // Drone ip adresse
     private InetAddress droneAdr;
     
@@ -119,10 +116,7 @@ public class ARDrone extends JFrame {
     TimeseriesChartPanel commandChart;
     TimeseriesChartPanel speedChart;
     TimeseriesChartPanel pcmdChart;
-    // The properties objects
-    private Properties configDrone;
-    private final String leftShimmerID;
-    private final String rightShimmerID;
+    
     private ShimmerMoveAnalyzerFrame leftShimmer;
     private ShimmerMoveAnalyzerFrame rightShimmer;
     private final KeyboardController keyboardController;
@@ -151,12 +145,7 @@ public class ARDrone extends JFrame {
             javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
         }
 
-        // Create the drone controller
-        /*final String rightShimmerID = "BDCD";
-        final String leftShimmerID = "9EDB";*/
-        final String rightShimmerID = "9EDB";
-        final String leftShimmerID = "BDCD";
-        ARDrone arDrone = new ARDrone(leftShimmerID, rightShimmerID);
+        ARDrone arDrone = new ARDrone();
     }
     
     private static JSlider newPercentageSlider(int initialPerc) {
@@ -173,13 +162,9 @@ public class ARDrone extends JFrame {
      *
      * @param droneIp the ip address of the drone
      */
-    public ARDrone(String leftShimmerID, String rightShimmerID) throws Exception {
+    public ARDrone() throws Exception {
         super();
-        this.leftShimmerID = leftShimmerID;
-        this.rightShimmerID = rightShimmerID;
 
-        // Load the properties files
-        loadProperties();
         droneClient = new DroneClient(droneBus);
         
         // Initialize commandState
@@ -222,7 +207,7 @@ public class ARDrone extends JFrame {
             public void actionPerformed(ActionEvent ae) {
                 try {
                     droneClient.disconnect();
-                    droneClient.connect(configDrone);
+                    droneClient.connect();
                 } catch (IOException ex) {
                     Logger.getLogger(ARDrone.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -363,6 +348,9 @@ public class ARDrone extends JFrame {
         /*DummyController controller = new DummyController(ActionCommand.allCommandMask(), this);
         controllerTickBus.register(controller);*/
         
+        final String leftShimmerID = DroneConfig.get().getString("left_shimmer");
+        final String rightShimmerID = DroneConfig.get().getString("right_shimmer");
+        
         leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID);
         leftShimmer.setVisible(true);
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID);
@@ -391,7 +379,7 @@ public class ARDrone extends JFrame {
         
         
         // Launch the configuration of the drone
-        droneClient.connect(configDrone);
+        droneClient.connect();
         
         droneBus.register(this);
         
@@ -493,34 +481,6 @@ public class ARDrone extends JFrame {
                 // Send the movement command
                 droneClient.sendPCMD(1, roll, pitch, gaz, yaw);
             }
-        }
-    }
-    
-    /**
-     * Load the properties of the drone and the sensors.
-     */
-    private void loadProperties() {
-        // Create the drone properties object
-        configDrone = new Properties();
-        try {
-            // Load the properties
-            configDrone.load(new FileInputStream(CONFIG_DRONE_PROPERTIES));
-
-            // Set the start speed
-            String sp = configDrone.getProperty("speed", "");
-            checkState(!sp.isEmpty());
-            System.out.println("Ignoring speed property");
-            //speed = Float.parseFloat(sp);
-
-            // Verify if the sensors property is set
-            String leftSensor = configDrone.getProperty("left_sensor");
-            String rightSensor = configDrone.getProperty("right_sensor");
-            checkState(!leftSensor.isEmpty());
-            checkState(!rightSensor.isEmpty());
-        } catch (FileNotFoundException ex) {
-            System.err.println("ARDrone.loadProperties: " + ex);
-        } catch (IOException ex) {
-            System.err.println("ARDrone.loadProperties: " + ex);
         }
     }
     
