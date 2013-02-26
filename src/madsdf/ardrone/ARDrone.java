@@ -242,15 +242,15 @@ public class ARDrone extends JFrame {
         northPanel.add(leftBiasSlider);
         
         northPanel.add(new JLabel("Translation speed %"));
-        transSpeedSlider = newPercentageSlider(20);
+        transSpeedSlider = newPercentageSlider(15);
         northPanel.add(transSpeedSlider);
         
         northPanel.add(new JLabel("Rotation speed %"));
-        rotSpeedSlider = newPercentageSlider(50);
+        rotSpeedSlider = newPercentageSlider(25);
         northPanel.add(rotSpeedSlider);
         
         northPanel.add(new JLabel("Vertical speed %"));
-        vertSpeedSlider = newPercentageSlider(50);
+        vertSpeedSlider = newPercentageSlider(30);
         northPanel.add(vertSpeedSlider);
 
         logArea = new JTextArea();
