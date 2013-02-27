@@ -352,26 +352,23 @@ public class ARDrone extends JFrame {
         final String leftShimmerID = DroneConfig.get().getString("left_shimmer");
         final String rightShimmerID = DroneConfig.get().getString("right_shimmer");
         
-        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID, shimmerIDs);
-        leftShimmer.setVisible(true);
+
         rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID, shimmerIDs);
         rightShimmer.setVisible(true);
-
-        EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
+        
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
-        // TODO: Should use configDrone.controller property
-        //NeuralController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "mouvements_sensor_droit.properties");
-        //NeuralController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "mouvements_sensor_gauche.properties");
-
-        //ShimmerAngleController leftAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, leftBus, "angle_left.properties");
-        //ShimmerAngleController rightAngleController = ShimmerAngleController.FromProperties(ActionCommand.allCommandMask(), this, rightBus, "angle_right.properties");
-        
         KNNGestureController rightGestureController =
                 KNNGestureController.FromProperties("right",
                 ActionCommand.allCommandMask(), this, rightBus,
                 "dtw_gestures_right.properties");
         controllerTickBus.register(rightGestureController);
+        
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID, shimmerIDs);
+        leftShimmer.setVisible(true);
+        
+        EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
+        
         KNNGestureController leftGestureController =
                 KNNGestureController.FromProperties("left",
                 ActionCommand.allCommandMask(), this, leftBus,
