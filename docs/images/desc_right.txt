@@ -1,0 +1,5 @@
+calibrated=true
+#7:ROTATERIGHT
+movements_map=1:GOFORWARD,2:GORIGHT,3:GOTOP,4:GODOWN,5:NOTHING,8:ROTATERIGHT
+windowsize=75
+detector=RepetitiveGestureDetector
