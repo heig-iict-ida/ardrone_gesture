@@ -25,6 +25,8 @@ More precisely, we use a `K-nearest neighbors` classifier with `k=3` to classify
 gesture. We also impose a threshold on the standard deviation of the window
 to avoid gesture recognition when the user is at rest.
 
+For more information on gesture recognition, see docs/gesture_recognition.rst.
+
 Online gesture detection
 ........................
 Online gesture detection is performed in `Projet_Quadropter`. A window as shown
