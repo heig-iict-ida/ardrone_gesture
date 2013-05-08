@@ -43,9 +43,11 @@ Also, you need to add all jars in ShimmerMoveAnalyzer/lib/jogl/ to your
 runtime classpath (go to libraries/run -> Add JAR/Folder and add all the jars
 in jogl)
 
-Authors
+Credits
 .......
-Grégoire Aubert and Julien Rebetez
+Copyright 2013 HEIG-VD
+
+Written by Grégoire Aubert and Julien Rebetez
 
 With advices from Andres Perez-Uribe and Héctor Satizábal
 
