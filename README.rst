@@ -36,7 +36,7 @@ and the detected gesture (if any).
 
 Project Setup Notes
 ===================
-This project requires that you add ShimmerMoveAnalyzer as a dependency (in
+This project requires that you add ShimmerMoveAnalyzer_ as a dependency (in
 netbeans, go to libraries/compile -> Add Project).
 
 Also, you need to add all jars in ShimmerMoveAnalyzer/lib/jogl/ to your
@@ -53,6 +53,7 @@ With advices from Andres Perez-Uribe and Héctor Satizábal
 
 .. _ARDrone: http://ardrone2.parrot.com/
 .. _Shimmer: http://www.shimmer-research.com/
+.. _ShimmerMoveAnalyzer: https://github.com/heig-iict-ida/shimmer_move_analyzer
 
 
 
