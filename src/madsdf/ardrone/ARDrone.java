@@ -353,8 +353,8 @@ public class ARDrone extends JFrame {
         final String rightShimmerID = DroneConfig.get().getString("right_shimmer");
         
 
-        //rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID, shimmerIDs);
-        //rightShimmer.setVisible(true);
+        rightShimmer = new ShimmerMoveAnalyzerFrame("Right", rightShimmerID, shimmerIDs);
+        rightShimmer.setVisible(true);
         
         EventBus rightBus = Globals.getBusForShimmer(rightShimmerID);
 
@@ -364,8 +364,8 @@ public class ARDrone extends JFrame {
                 "dtw_gestures_right.properties");
         controllerTickBus.register(rightGestureController);
         
-        //leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID, shimmerIDs);
-        //leftShimmer.setVisible(true);
+        leftShimmer = new ShimmerMoveAnalyzerFrame("Left", leftShimmerID, shimmerIDs);
+        leftShimmer.setVisible(true);
         
         EventBus leftBus = Globals.getBusForShimmer(leftShimmerID);
         
