@@ -223,7 +223,18 @@ public class NavDataReader extends Thread {
                      drone.setNavDataBootStrap(false);
 
                      // Retrieve the flying state
-                     drone.setFlyingState(FlyingState.fromInt(byteArrayToInt(navDataBuf, offset) >> 16));
+                     FlyingState state = FlyingState.fromInt(byteArrayToInt(navDataBuf, offset) >> 16);
+                     // This a fix for a bug where the drone mistakenly land without the user
+                     // requesting to do so.
+                     // The bug is due to us interpreting the drone state as "LANDING" and we
+                     // therefore set the flying state to LANDING. As soon as the flying state
+                     // is set to LANDING, we start sending landing commands (to ensure the
+                     // drone actually lands).
+                     // So, we ignore landing state if this was not initiated by a user commmand
+                     if (state == FlyingState.LANDING && drone.getFlyingState() != FlyingState.LANDING) {
+                         state = FlyingState.FLYING;
+                     } 
+                     drone.setFlyingState(state);
                      offset += 4;
 
                      // Retrieve the battery %

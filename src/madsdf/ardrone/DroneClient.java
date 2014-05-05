@@ -109,6 +109,7 @@ public class DroneClient {
                 DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, droneAddress, AT_PORT);
 
                 // And send it
+                //System.out.println(new String(buf, "ASCII"));
                 atSocket.send(sendPacket);
             }
         } catch (IOException ex) {
