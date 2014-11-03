@@ -1,0 +1,5 @@
+# Indicate if the data is calibrated or not
+calibrated=true
+# Maps "COMMAND <XX>" to movements name
+movements_map=1:GOFORWARD,2:GORIGHT,3:GOTOP,4:GODOWN
+# movement_1_ > 9 are different ways to do the movement

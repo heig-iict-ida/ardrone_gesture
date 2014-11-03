@@ -1,0 +1,7 @@
+# Indicate if the data is calibrated or not
+calibrated=false
+# Maps "COMMAND <XX>" to movements name
+#movements_map=1:GOBACKWARD,2:GOLEFT,3:TAKEOFF,4:LAND,5:NOTHING,6:ROTATERIGHT
+movements_map=1:GOBACKWARD,2:GOLEFT,5:NOTHING,6:ROTATERIGHT
+windowsize=150
+detector=HistoricalGestureDetector

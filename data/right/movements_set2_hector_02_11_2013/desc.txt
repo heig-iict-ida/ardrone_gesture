@@ -1,0 +1,5 @@
+1: Avancer
+2: Droite
+3: Gauche
+4: Monter
+5: Descendre
