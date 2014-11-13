@@ -51,10 +51,22 @@ in jogl)
 
 Creating an archive for binary distribution
 -------------------------------------------
+You can use the generate_dist_zip.sh script, which does the following
 1. Compile ARDroneController
 2. Copy the jar in shimmer_move_analyzer/dist/lib to ardrone_gesture/dist/lib
 3. Copy ardrone_gesture/data to ardrone_gesture/dist/data
 4. Create a zip of ardrone_gesture/dist and distribute
+
+Windows
+-------
+If the program fails to start with a bluecove-related issue, you can try
+to add the bluecove jar as a run dependencie (project properties -> libraries,
+run tab)
+
+Linux
+-----
+On Ubuntu, you need libbluetooth-dev . On other distributions, the package
+providing libbluetooth.so .
 
 Credits
 .......
