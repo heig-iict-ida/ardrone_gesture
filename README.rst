@@ -4,6 +4,10 @@ ARDrone Gesture Control
 A Java library to control a Parrot ARDrone_ using Shimmer_ accelerometer sensor placed on the wrists.
 The library should be flexible enough so it can be adapted to other sensor types or such that only the ARDrone control part can be used.
 
+To get the latest binary version, check out the releases :
+
+https://github.com/heig-iict-ida/ardrone_gesture/releases
+
 This software was developped at the `HEIG-VD <http://www.heig-vd.ch>`_ and presented (and tried by children)
 during the opening day of the "Souvenirs du Futur" exhibition at `La Maison d'Ailleurs <http://www.ailleurs.ch>`_
 
