@@ -49,6 +49,13 @@ Also, you need to add all jars in ShimmerMoveAnalyzer/lib/jogl/ to your
 runtime classpath (go to libraries/run -> Add JAR/Folder and add all the jars
 in jogl)
 
+Creating an archive for binary distribution
+-------------------------------------------
+1. Compile ARDroneController
+2. Copy the jar in shimmer_move_analyzer/dist/lib to ardrone_gesture/dist/lib
+3. Copy ardrone_gesture/data to ardrone_gesture/dist/data
+4. Create a zip of ardrone_gesture/dist and distribute
+
 Credits
 .......
 Copyright 2013 HEIG-VD
