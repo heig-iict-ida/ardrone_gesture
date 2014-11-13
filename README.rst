@@ -27,6 +27,9 @@ to avoid gesture recognition when the user is at rest.
 
 For more information on gesture recognition, see docs/gesture_recognition.rst.
 
+Video of the movements are available on youtube :
+https://www.youtube.com/playlist?list=PLlPxCK3f6RNzy-o8ZU_1FBO7phrK6cJzv
+
 Online gesture detection
 ........................
 Online gesture detection is performed in `Projet_Quadropter`. A window as shown
