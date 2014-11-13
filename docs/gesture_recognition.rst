@@ -3,6 +3,8 @@ Overview of Gesture Recognition
 This is a quick overview of gesture recognition using accelerometer as implemented
 for our ARDrone Gesture Control project.
 
+The gesture_videos folder contains short videoclips demonstrating gestures.
+
 We use 3-axis Shimmer accelerometers, placed on the wrists of the subject as
 shown in the following image :
 
