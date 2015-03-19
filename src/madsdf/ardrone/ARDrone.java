@@ -296,7 +296,14 @@ public class ARDrone extends JFrame {
 
         // Define the frame
         videoPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-        centerPanel.add(videoPanel);
+        //centerPanel.add(videoPanel);
+        
+        // Show the video panel in a dedicated window
+        JFrame videoFrame = new JFrame();
+        videoFrame.add(videoPanel);
+        videoFrame.setVisible(true);
+        videoFrame.setTitle("Video");
+        videoFrame.setSize(640, 480);
 
         // Define the battery progress bar
         batteryLevel = new JProgressBar(JProgressBar.HORIZONTAL, 0, 100);
